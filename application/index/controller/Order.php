@@ -6,7 +6,7 @@ class Order extends Base{
     public function getRateList (){
 
         //token 验证
-        $this->token_check(input('uid'), input('token'));
+        $this->token_check(input('customerId'), input('token'));
 
         $customerId = input('customerId');
         $serverId = input('serverId');
@@ -28,12 +28,14 @@ class Order extends Base{
             $condition['serverId'] = $serverId;
         }
 
-        $list = model('rate')->where($condition)->paginate($pageSize); //获取除password之外的字段
-        //dump(model('rate')->getLastSql());exit;
-        $count = $list->render();
-
+        $list = model('rate')
+            ->where($condition)
+            ->paginate($pageSize, false, ['page'=>$pageId]);
+        //dump($list);exit;
+        //$count = $list->render();
+        //$list['totalPage'] = ceil($list['total']/$list['per_page']);
         $this->response['status'] = 1;
-        $this->response['content'] = array('list'=>$list, 'count'=>$count);
+        $this->response['content'] = $list;
         $this->ajaxReturn();
     }
 
