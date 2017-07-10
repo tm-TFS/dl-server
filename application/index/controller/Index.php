@@ -2,7 +2,7 @@
 namespace app\index\controller;
 
 use think\Validate;
-use think\Session;
+use think\Cache;
 class Index extends Base
 {
     public function index()
@@ -37,11 +37,15 @@ class Index extends Base
         }
 
         //写入缓存
-        session("token.$account",md5($account.time()));
+        Cache::tag('token')->set("1",md5($account.time()));
+        dump(Cache::tag('token')->get(1));
+        dump($this->getToken(1));exit;
+
 
         $this->response['status'] = 1;
         $this->response['content'] = array('uid'=>1,'nickName'=>'小沉','mobile'=>$account, 'token'=>session("token.$password"));
         $this->ajaxReturn();
 
     }
+
 }

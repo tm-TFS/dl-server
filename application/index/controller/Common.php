@@ -2,7 +2,7 @@
 namespace app\index\controller;
 
 use think\Validate;
-use think\Session;
+use think\Cache;
 class Common extends Base{
     public function login (){
 
@@ -25,8 +25,7 @@ class Common extends Base{
         $token = md5($account.time());
 
         //写入缓存
-        session("token.$account",$token);
-        dump(session("token.$account"));exit;
+        Cache::tag('token')->set($res['id'],$token);
 
         $this->response['status'] = 1;
         $this->response['content'] = $res;

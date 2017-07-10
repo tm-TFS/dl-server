@@ -1,6 +1,6 @@
 <?php
 namespace app\index\controller;
-use think\Session;
+use think\Cache;
 use think\Validate;
 use \think\Request;
 //允许跨域
@@ -21,12 +21,16 @@ class Base{
     }
 
     protected function token_check ($name, $value) {
-        //dump(session("token.$name"));exit;
-        if(session("token.$name") != $value || !session("token.$name")){
+        $token = $this->getToken($name);
+        if($token != $value || !$token){
             header("HTTP/1.0 401 Unauthorized");
             echo "401";
             exit;
         }
+    }
+
+    protected function getToken ($name) {
+        return Cache::tag('token')->get($name);
     }
 
     /**

@@ -2,12 +2,11 @@
 namespace app\index\controller;
 
 use think\Validate;
-use think\Session;
 class Order extends Base{
     public function getRateList (){
 
         //token 验证
-        $this->token_check(input('account'), input('token'));
+        $this->token_check(input('uid'), input('token'));
 
         $customerId = input('customerId');
         $serverId = input('serverId');
