@@ -3,9 +3,9 @@ namespace app\index\controller;
 
 use think\Validate;
 use think\Cache;
+use think\Db;
 class Common extends Base{
     public function login (){
-
         $account = input('account');
         $password = input('password');
 
@@ -32,6 +32,25 @@ class Common extends Base{
         $this->response['token'] = $token;
         $this->ajaxReturn();
     }
+
+    //获取服务器列表 现默认王者荣耀
+    public function getServerList(){
+        $servers1 = db('servers')->field('id as value, name as label')->where('pid','=',0)->select();
+        $servers2 = db('servers')->field('id as value, pid, name as label')->where('pid','<>',0)->select();
+
+        foreach ($servers1 as $key => &$value){
+            $value['children'] = [];
+            foreach ($servers2 as $key2 => $value2){
+                if($value['value'] == $value2['pid']){
+                    array_push($value['children'],$value2 );
+                }
+            }
+        }
+
+        $this->successReturn($servers1);
+
+    }
+
 
 
     protected function validateCheck($data, $vali_name = CONTROLLER_NAME) {

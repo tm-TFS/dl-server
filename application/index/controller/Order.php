@@ -16,6 +16,9 @@ class Order extends Base
         $serverId = input('serverId');
         $pageId = input('pageId');
         $pageSize = input('pageSize') ? input('pageSize') : 10;
+        $publishId = input('publishId');
+        $title = input('title');
+        $name = input('name');
 
         $data = [
             'customerId' => $customerId,
@@ -24,12 +27,22 @@ class Order extends Base
         ];
         $this->validateCheck($data);
 
-        $condition = [];
+        $condition = array();
+
         if ($customerId) {
             $condition['customerId'] = $customerId;
         }
         if ($serverId) {
             $condition['serverId'] = $serverId;
+        }
+        if ($publishId) {
+            $condition['publishType'] = $publishId;
+        }
+        if ($title) {
+            $condition['title'] = $title;
+        }
+        if ($name) {
+            $condition['customerName'] = $name;
         }
 
         $list = model('rate')
