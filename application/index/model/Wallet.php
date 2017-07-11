@@ -3,14 +3,18 @@
 namespace app\index\model;
 
 use think\Model;
+use think\Db;
 
 class Wallet extends Model
 {
     public function recharge(){
-        $wallet = new Wallet;
+        Db::transaction(function(){
 
-        $res = $wallet->select();
-        return $res;
+            $wallet = new Wallet;
+            $res = $wallet->select();
+            return $res;
+        });
+
     }
 
 }
