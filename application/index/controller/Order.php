@@ -23,6 +23,11 @@ class Order extends Base
         $publishId = input('publishId');
         $title = input('title');
         $name = input('name');
+        $isReceive = input('receive_model'); //是否接手订单 1-未接手 2-已接手
+        $rateStatus  =input('rateStatus'); //1-正在代练 2-等待验收 3-订单异常 4-锁定订单 5-协商撤销中 6-客服接入中 7-已处理 10-已结算 11-已撤下
+        $sortKey = input('sortKey');  //排序字段
+        $order = input('order');  //asc  desc
+
 
         $data = [
             'customerId' => $customerId,
@@ -36,8 +41,14 @@ class Order extends Base
         if ($customerId) {
             $condition['customerId'] = $customerId;
         }
+        if ($isReceive) {
+            $condition['isReceive'] = $isReceive;
+        }
         if ($serverId) {
             $condition['serverId'] = $serverId;
+        }
+        if ($rateStatus) {
+            $condition['rateStatus'] = $rateStatus;
         }
         if ($publishId) {
             $condition['publishType'] = $publishId;
@@ -51,6 +62,7 @@ class Order extends Base
 
         $list = model('rate')
             ->where($condition)
+            ->order($sortKey, $order)
             ->paginate($pageSize, false, ['page' => $pageId]);
         //dump($list);exit;
         //$count = $list->render();
@@ -72,18 +84,6 @@ class Order extends Base
             exit;
         }
         $this->successReturn($res);
-    }
-
-    public function getOrderList () {
-
-        $publishCName = input('publishCName');
-        $rateTitle = input('rateTitle');
-        $pageId = input('pageId');
-        $pageSize = input('pageSize') ? input('pageSize') : 10;
-        $publishId = input('publishId');
-        $title = input('title');
-        $name = input('name');
-
     }
 
     //后台发布订单
