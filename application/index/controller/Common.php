@@ -33,7 +33,7 @@ class Common extends Base{
         $this->ajaxReturn();
     }
 
-    //获取服务器列表 现默认王者荣耀
+    //获取服务器列表 现默认 游戏 王者荣耀
     public function getServerList(){
         $servers1 = db('servers')->field('id as value, name as label')->where('pid','=',0)->select();
         $servers2 = db('servers')->field('id as value, pid, name as label')->where('pid','<>',0)->select();

@@ -6,11 +6,15 @@ use think\Validate;
 
 class Order extends Base
 {
-    public function getRateList()
-    {
+    public function __construct() {
+        //parent::__construct();
 
         //token 验证
         $this->token_check(input('customerId'), input('token'));
+    }
+
+    public function getRateList()
+    {
 
         $customerId = input('customerId');
         $serverId = input('serverId');
@@ -54,6 +58,32 @@ class Order extends Base
         $this->response['status'] = 1;
         $this->response['content'] = $list;
         $this->ajaxReturn();
+    }
+
+    public function getRateDetail () {
+        $id = input('orderId');
+        $condition = [];
+        if($id){
+            $condition = array('id'=>$id);
+        }
+        $res = db('rate')->where($condition)->find();
+        if(!$res){
+            $this->errorReturn('找不到该订单');
+            exit;
+        }
+        $this->successReturn($res);
+    }
+
+    public function getOrderList () {
+
+        $publishCName = input('publishCName');
+        $rateTitle = input('rateTitle');
+        $pageId = input('pageId');
+        $pageSize = input('pageSize') ? input('pageSize') : 10;
+        $publishId = input('publishId');
+        $title = input('title');
+        $name = input('name');
+
     }
 
     //后台发布订单
