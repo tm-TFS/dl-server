@@ -57,10 +57,10 @@ class Order extends Base
             $condition['title'] = $title;
         }
         if ($name) {
-            $condition['customerName'] = $name;
+            $condition['publishName'] = $name;
         }
 
-        $list = model('rate')
+        $list = db('rate_list')
             ->where($condition)
             ->order($sortKey, $order)
             ->paginate($pageSize, false, ['page' => $pageId]);
@@ -78,7 +78,7 @@ class Order extends Base
         if($id){
             $condition = array('id'=>$id);
         }
-        $res = db('rate')->where($condition)->find();
+        $res = db('rate_detail')->where($condition)->find();
         if(!$res){
             $this->errorReturn('找不到该订单');
             exit;
