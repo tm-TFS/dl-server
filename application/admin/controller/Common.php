@@ -51,8 +51,6 @@ class Common extends Base{
 
     }
 
-
-
     protected function validateCheck($data, $vali_name = CONTROLLER_NAME) {
 
         $validate = validate($vali_name);

@@ -44,7 +44,25 @@ class Common extends Base{
 
     }
 
+    public function getSpecials(){
+        $specialname = input('specialName');
+        $res = [];
+        $res = Db::table('ls_special')
+            ->where('specialname','like','%'.$specialname.'%')
+            ->limit(10)
+            ->select();
+        $this->successReturn($res);
+    }
 
+    public function getSpecialDetail(){
+        $id = input('id');
+        $res = [];
+        $res = Db::table('ls_special')
+            ->where(array('id'=>$id))
+            ->limit(10)
+            ->find();
+        $this->successReturn($res);
+    }
 
     protected function validateCheck($data, $vali_name = CONTROLLER_NAME) {
 
