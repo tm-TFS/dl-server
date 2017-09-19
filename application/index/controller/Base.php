@@ -2,6 +2,7 @@
 namespace app\index\controller;
 use think\Cache;
 use think\Validate;
+use think\Controller;
 use \think\Request;
 //允许跨域
 header("Access-Control-Allow-Origin:*");
@@ -11,7 +12,7 @@ define('CONTROLLER_NAME',Request::instance()->controller());
 define('MODULE_NAME',Request::instance()->module());
 define('ACTION_NAME',Request::instance()->action());
 
-class Base{
+class Base extends Controller{
 
     public $response = array('status' => 0,'content'=> [], 'msg' => '');
 

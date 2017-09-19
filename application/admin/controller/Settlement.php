@@ -1,80 +1,42 @@
 <?php
 namespace app\admin\controller;
 
-use think\Validate;
-use think\Db;
+use app\admin\model\Settlement as M;
+
 class Settlement extends Base{
-    public function __construct() {
+    /*public function __construct() {
         //token 验证
         $this->token_check(input('uid'), input('token'));
-    }
+    }*/
 
     //后台充值
-    public function recharge(){
+    public function deal(){
 
-        $walletId = input('walletId');
-        $amount = input('amount') ? input('amount') : 100;
-        $tradeType = 2; // 1支付 2充值 3提现 4转账 (不用) 5退款 (不用)
-        $tradeDescription = '系统后台充值';
-        $paymentType = 1; //1线下 2支付宝 3微信 4余额支付
-        $tradeOrderId = input('tradeOrderId') ? input('tradeOrderId') : 1231;
-        $tradeNo = input('tradeNo') ? input('tradeNo') : 1231;
+        $m = new M();
 
-        $toAmount = 0;
-        $fromAmount = 0;
-
-        if(!$walletId){
-            $this->errorReturn('错误的钱包编码');
-            exit;
-        }
-
-        if(!$amount){
-            $this->errorReturn('请输入充值金额');
-            exit;
-        }
+        $res = $m->deal();
 
 
-        $toWallet = db('wallet')->field('balanceAmount')->where(array('id'=>$walletId))->find();
-        if($toWallet){
-            $toAmount = $toWallet['balanceAmount'] + $amount;
+        if($res['status'] == 1){
+            $this->successReturn($res['msg']);
         } else {
-            $this->errorReturn('错误的钱包编码');
-            exit;
+            $this->errorReturn($res['msg']);
         }
 
-        $detail_add = array(
-            'walletToId' => $walletId,
-            'amount' => $amount,
-            'toAmount' => $toAmount,
-            'fromAmount' => $fromAmount,
-            'tradeType' => $tradeType,
-            'tradeDescription' => $tradeDescription,
-            'paymentType' => $paymentType,
-            'tradeOrderId' => $tradeOrderId,
-            'tradeNo' => $tradeNo,
-            'createTime' =>  date('Y-m-d h:i:s',time()),
-            'createUser' => 'admin'
-        );
+    }
 
-        Db::startTrans();
-        try{
-            db('wallet_bill_detail')->insert($detail_add);
-            db('wallet')
-                ->where('id', $walletId)
-                ->update([
-                    'balanceAmount'  => ['exp',"balanceAmount + $amount"],
-                    'enableAmount' => ['exp',"enableAmount + $amount"],
-                ]);
-            // 提交事务
-            Db::commit();
-        } catch (\Exception $e) {
-            // 回滚事务
-            Db::rollback();
-            $this->errorReturn('充值失败');
-            exit;
+    public function getList() {
+
+        $m = new M();
+
+        $res = $m->pageQuery();
+
+
+        if($res['status'] == 1){
+            $this->successReturn($res['data']);
+        } else {
+            $this->errorReturn($res['msg']);
         }
-
-        $this->successReturn();
 
     }
 
@@ -99,22 +61,4 @@ class Settlement extends Base{
         $this->successReturn($list);
     }
 
-    protected function validateCheck($data) {
-
-        $validate = validate(CONTROLLER_NAME);
-
-        if (!$validate->check($data)) {
-
-            $err_msg = $validate->getError();
-
-            $this->response['status'] = 0;
-            $this->response['msg'] = $err_msg;
-
-            $this->ajaxReturn();
-
-            exit;
-        }
-
-        return;
-    }
 }
