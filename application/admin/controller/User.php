@@ -47,4 +47,41 @@ class User extends Base{
             $this->errorReturn($res['msg']);
         }
     }
+
+    public function getSort () {
+        $m = new MUser();
+        $res = $m->getSort();
+
+        if($res['status'] == 1){
+            $this->successReturn($res);
+        } else {
+            $this->errorReturn($res['msg']);
+        }
+    }
+
+    public function getTree () {
+        $m = new MUser();
+        $res = $m->getTree();
+
+        if($res['status'] == 1){
+            $this->successReturn($res);
+        } else {
+            $this->errorReturn($res['msg']);
+        }
+    }
+
+    public function getRecommendList() {
+        $m = new MUser();
+        $where = array(
+            'recommender' => input('recommender')
+        );
+        $res = $m->pageQuery($where);
+
+        if($res['status'] == 1){
+            $this->successReturn($res);
+        } else {
+            $this->errorReturn($res['msg']);
+        }
+    }
+
 }

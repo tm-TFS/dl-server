@@ -28,7 +28,11 @@ class Settlement extends Model
 
         $user = new MUser();
 
-        $uRes = $user->getInfo()['data'];
+        if(empty($data['userId'])){
+            return WSTReturn("错误的充值对象");
+        }
+
+        $uRes = $user->getById($data['userId']);
         $time = date('Y-m-d h:i:s', time());
 
         //充值
