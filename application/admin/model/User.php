@@ -3,6 +3,7 @@
 namespace app\admin\model;
 
 use think\Model;
+use think\Db;
 
 class User extends Model
 {
@@ -25,6 +26,8 @@ class User extends Model
 
     public function register () {
         $data = array ();
+        $registerFees = config('registerFee');
+
         $data['loginName'] = input("loginName");    //登录账户，若没有则用id
         $data['loginPwd'] = md5(input('loginPwd'));
         $data['cloginPwd'] = md5(input('cloginPwd'));
@@ -72,6 +75,25 @@ class User extends Model
         $leader = $this->where(array('leaderNo'=> $data['leaderNo'], 'direction' => $data['direction']))->field('userId')->find();
         if(!empty($leader)){
             return WSTReturn("所在位置已被占用!");
+        }
+
+        switch ($data['userType']) {
+            case 1:
+                $data['registerFee'] = $registerFees[1];
+                break;
+            case 2:
+                $data['registerFee'] = $registerFees[2];
+                break;
+            case 3:
+                $data['registerFee'] = $registerFees[3];
+                break;
+            case 4:
+                $data['registerFee'] = $registerFees[4];
+                break;
+            default:
+                $data['registerFee'] = 0;
+                break;
+
         }
 
         $data['wechatNo'] = input('wechatNo');
@@ -196,6 +218,57 @@ class User extends Model
         dump($c_tree);*/
         $tree = genTree($u, 'userId', 'leaderNo');
         return WSTReturn("", 1, $tree);
+    }
+
+    public function getByIds(){
+        $userIds = input('userIds');
+
+        if(empty($userIds)){
+            return WSTReturn("用户编号不能为空", -1);
+        }
+
+        $u = $this->all($userIds);
+
+        if(empty($u)){
+            return WSTReturn("无效用户", -1);
+        }
+
+        return WSTReturn("", 1, $u);
+    }
+
+    /**
+     * 编辑
+     */
+    public function editAll(){
+        $Id = (int)input('post.userId');
+        $data = input();
+
+
+
+        $u = $this->where('userId',$Id)->field('loginSecret')->find();
+        if(empty($u))return WSTReturn('无效的用户');
+        //判断是否需要修改密码
+        if(empty($data['loginPwd'])){
+            unset($data['loginPwd']);
+        }else{
+            $data['loginPwd'] = md5($data['loginPwd'].$u['loginSecret']);
+        }
+        Db::startTrans();
+        try{
+            if(isset($data['userPhoto'])){
+                WSTUseImages(1, $Id, $data['userPhoto'], 'users', 'userPhoto');
+            }
+
+            WSTUnset($data,'createTime,userId');
+            $result = $this->allowField(true)->save($data,['userId'=>$Id]);
+            if(false !== $result){
+                Db::commit();
+                return WSTReturn("编辑成功", 1);
+            }
+        }catch (\Exception $e) {
+            Db::rollback();
+            return WSTReturn('编辑失败',-1);
+        }
     }
 
     static public $treeList = array(); //存放无限分类结果如果一页面有多个无限分类可以使用 Tool::$treeList = array(); 清空

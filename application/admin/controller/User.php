@@ -2,6 +2,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\User as MUser;
+use app\admin\model\Settlement as Mse;
 use think\Validate;
 class User extends Base{
     public function register (){
@@ -82,6 +83,34 @@ class User extends Base{
         } else {
             $this->errorReturn($res['msg']);
         }
+    }
+
+    public function passRegister() {
+        $m = new MUser();
+        $s = new Mse();
+
+        $users = array();
+        $u = $m->getByIds();
+
+        if($u['status'] == 1){
+            $users = $u['data'];
+        } else {
+            $this->errorReturn($u['msg']);
+        }
+
+        $registerFee = 0;
+        foreach ($users as $v){
+            $registerFee += $v['registerFee'];
+        }
+
+        $res = $s->deal($registerFee);
+
+        if($res['status'] == 1){
+            $this->successReturn($res);
+        } else {
+            $this->errorReturn($res['msg']);
+        }
+
     }
 
 }
