@@ -110,6 +110,11 @@ class Settlement extends Model
             $registerFee = 0;
             $w_data = array();
             foreach ($users as $k => $v){
+
+                if($v['userStatus'] == 1){
+                    continue;
+                }
+
                 $registerFee += $v['registerFee'];
                 $recommend = $u->getById($v['recommender']);
 
@@ -123,8 +128,9 @@ class Settlement extends Model
 
             }
 
-            if($registerFee <= 0){
-                return WSTReturn("金额金额不能小于0");
+            //$registerFee 还是等于0 说明所选用户均为正式用户
+            if($registerFee == 0){
+                return WSTReturn("所选用户均不是待审核状态");
             }
 
             $data['fromAmount'] = $uRes['fictitiousMoney'] - $registerFee;
@@ -154,10 +160,18 @@ class Settlement extends Model
                 $result = $u->save($u_data ,['userId'=>$uRes['userId']]);
                 //$_sql = $u->getLastSql();dump($_sql);exit;
 
-                //写入奖励日志
+                //写入奖励日志 用户奖励金累加
                 $r = new Mre();
                 foreach ($w_data as $v){
                     $res = $r->saveAll($v);
+                    foreach ($v as $value){
+                        $_res = $u->execute("update f_user set userMoney = userMoney + :amount where userId = :userId", ['userId'=> $value['userId'], 'amount'=> $value['amount']]);
+                        if(empty($_res)){
+                            Db::rollback();
+                            return WSTReturn("写入失败", -1);
+                        }
+                    }
+
                     if(empty($res)){
                         Db::rollback();
                         return WSTReturn("写入失败", -1);
@@ -166,6 +180,7 @@ class Settlement extends Model
 
                 //更新注册用户激活状态 userStatus
                 $userIdArr = explode(',',input('userIds'));
+                $_u_data = array();
                 foreach ($userIdArr as $v){
                     $_u_data[] = ['userId'=>$v, 'userStatus' => 1];
                 }

@@ -4,22 +4,23 @@ namespace app\admin\model;
 
 use think\Model;
 use think\Db;
+use think\Request;
 
 class User extends Model
 {
 
-
     /**
      * 分页
      */
-    public function pageQuery($where = []){
+    public function pageQuery($where = [], $oeder = 'createTime desc'){
         /******************** 查询 ************************/
         $pageId = input('pageId') ? input('pageId') : 1;
         $pageSize = input('pageSize') ? input('pageSize') : 10;
 
         /********************* 取数据 *************************/
         $rs = $this->where($where)
-            ->order('createTime desc')
+            ->field('loginPwd, payPwd', true)
+            ->order($oeder)
             ->paginate($pageSize, false, ['page'=>$pageId]);
         return WSTReturn('', 1, $rs);
     }
@@ -27,6 +28,8 @@ class User extends Model
     public function register () {
         $data = array ();
         $registerFees = config('registerFee');
+
+        $bankList = ['支付宝账户','中国农业银行','中国建设银行','中国工商银行','中国交通银行','中信银行','中国人民银行','中国邮政储蓄银行','兴业银行','农商银行'];
 
         $data['loginName'] = input("loginName");    //登录账户，若没有则用id
         $data['loginPwd'] = md5(input('loginPwd'));
@@ -38,14 +41,26 @@ class User extends Model
         $data['trueName'] = input('trueName');
         $data['userPhone'] = input('userPhone');
         $data['address'] = input('address');
-        $data['bankName'] = input('bankName');
+        $data['bankName'] = $bankList[input('bankName/d')];
         $data['bankAccount'] = input('bankAccount');
         $data['accountName'] = input('accountName');
         $data['recommender'] = input('recommender');
+        $data['agentCenter'] = input('agentCenter');    //代理中心
         $data['leaderNo'] = input('leaderNo');  //接点人编号
         $data['direction'] = (int)input('direction');  //所在位置 1-左 2-右
 
         //以上部分需要验证是否为空
+
+        foreach ($data as $v){
+            if($v == null || $v ==''){
+                return WSTReturn("注册信息不完整!");
+            }
+        }
+
+        //银行分理处
+        if(!empty($data['bankNameDetail'])){
+            $data['bankName'] = $data['bankName'] . $data['bankNameDetail'];
+        }
 
         $loginName = $data['loginName'];
 
@@ -62,13 +77,18 @@ class User extends Model
         if($data['payPwd']!=$data['cpayPwd']){
             return WSTReturn("两次输入二级密码不一致!");
         }
-        foreach ($data as $v){
-            if($v == null || $v ==''){
-                return WSTReturn("注册信息不完整!");
-            }
-        }
         if($data['direction'] != 1 && $data['direction'] != 2){
             return WSTReturn("所在位置不正确!");
+        }
+
+        //判断代理中心是否正确 userType == 4
+        $agent = $this->getById($data['agentCenter']);
+        if(empty($agent)){
+            return WSTReturn("无效的代理中心!");
+        } else {
+            if($agent['userType'] != 4){
+                return WSTReturn("该代理用户级别太低!");
+            }
         }
 
         //查询该接点人位置是否被占用
@@ -108,6 +128,34 @@ class User extends Model
         return WSTReturn('注册成功',1);
     }
 
+    public function login() {
+        $request = request();
+        $data['loginName'] = input("loginName");    //登录账户，若没有则用id
+        $data['loginPwd'] = md5(input('loginPwd'));
+        $data['code'] = md5(input('code'));
+
+        if(empty($data['loginName'])){
+            return WSTReturn("请输入登录账号");
+        }
+        if(empty($data['loginPwd'])){
+            return WSTReturn("请输入登录密码");
+        }
+        if(empty($data['code'])){
+            return WSTReturn("请输入验证码");
+        }
+
+        $time = date('Y-m-d h:i:s',time());
+
+        $user = $this->where(array('loginName' => $data['loginName'], 'loginPwd' => $data['loginPwd']))->find();
+        if(empty($user)){
+            return WSTReturn("账号或密码错误");
+        }
+        $this->save(array('lastTime' => $time, 'lastIP' => $request->ip()), ['userId' => $user['userId']]);
+
+        return WSTReturn('', 1, $user);
+
+    }
+
     public function changeInfo () {
         $data = array ();
         $id = (int)input('userId');
@@ -143,7 +191,7 @@ class User extends Model
 
         $id = (int)input('userId');
         $data = input();
-        $u = $this->where('userId',$id)->field('id')->find();
+        $u = $this->where('userId',$id)->field('userId')->find();
         if(empty($u))return WSTReturn('无效的用户');
 
 
@@ -159,6 +207,8 @@ class User extends Model
             return WSTReturn('两次输入二级密码不一致',-1);
         }
 
+        $data['loginPwd'] = md5($data['loginPwd']);
+        $data['payPwd'] = md5($data['payPwd']);
         $result = $this->allowField(true)->save($data,['userId'=>$id]);
 
         if(false !== $result){
@@ -196,7 +246,7 @@ class User extends Model
 
     public function getInfo() {
         $id = (int)input('userId');
-        $u = $this->where('userId',$id)->field('loginPwd', true)->find();
+        $u = $this->where('userId',$id)->field('loginPwd, payPwd', true)->find();
 
         if(empty($u)){
             return WSTReturn("无效的用户", -1);

@@ -2,15 +2,34 @@
 namespace app\admin\controller;
 
 use app\admin\model\User as MUser;
+use app\admin\model\Test as MTest;
 use app\admin\model\Settlement as Mse;
-use think\Validate;
+use think\Db;
 class User extends Base{
+
+    public function test() {
+        $m = new MTest();
+        $res = $m -> execute("update f_test set money = money+:amount where id=:id", ['id' => 1, 'amount' => 100]);
+        dump($res);
+    }
+
     public function register (){
         $m = new MUser();
         $res = $m->register();
 
         if($res['status'] == 1){
             $this->successReturn('注册成功');
+        } else {
+            $this->errorReturn($res['msg']);
+        }
+    }
+
+    public function login() {
+        $m = new MUser();
+        $res = $m->login();
+
+        if($res['status'] == 1){
+            $this->successReturn($res);
         } else {
             $this->errorReturn($res['msg']);
         }
@@ -73,10 +92,16 @@ class User extends Base{
 
     public function getRecommendList() {
         $m = new MUser();
+        $key = input('key');
         $where = array(
-            'recommender' => input('recommender')
+            'recommender' => input('recommender'),
+
         );
-        $res = $m->pageQuery($where);
+        if(!empty($key)){
+            $where['loginName|trueName'] = ['like', "%" . "$key" . "%"];
+        }
+        $order = 'userStatus asc, createTime desc';
+        $res = $m->pageQuery($where, $order);
 
         if($res['status'] == 1){
             $this->successReturn($res);
@@ -85,32 +110,5 @@ class User extends Base{
         }
     }
 
-    public function passRegister() {
-        $m = new MUser();
-        $s = new Mse();
-
-        $users = array();
-        $u = $m->getByIds();
-
-        if($u['status'] == 1){
-            $users = $u['data'];
-        } else {
-            $this->errorReturn($u['msg']);
-        }
-
-        $registerFee = 0;
-        foreach ($users as $v){
-            $registerFee += $v['registerFee'];
-        }
-
-        $res = $s->deal($registerFee);
-
-        if($res['status'] == 1){
-            $this->successReturn($res);
-        } else {
-            $this->errorReturn($res['msg']);
-        }
-
-    }
 
 }
