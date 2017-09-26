@@ -73,11 +73,13 @@ class Base extends Controller{
         $this->response['status'] = 1;
         $this->response['content'] = $content;
         $this->ajaxReturn();
+        return;
     }
     protected function errorReturn($msg="操作失败") {
         $this->response['status'] = 0;
         $this->response['msg'] = $msg;
         $this->ajaxReturn();
+        return;
     }
 
 }

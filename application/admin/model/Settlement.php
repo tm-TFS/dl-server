@@ -11,7 +11,7 @@ class Settlement extends Model
 {
     /**
      * params: {
-     * tradeType: 1-支付 2-充值 3-提现 4-转账 5-退款 6-开通会员 7-奖金转电子币,
+     * tradeType: 1-支付 2-充值 3-提现 4-转账 5-退款 6-开通会员 7-奖金转电子币 8-会员升级,
      * amount: 交易金额,
      * userFromId (userId): 来源编码,
      * userToId (userId): 目标编码,
@@ -24,7 +24,6 @@ class Settlement extends Model
     public function deal ()
     {
         $data = input();
-
         if (empty($data['tradeType'])) {
             return WSTReturn("错误的交易类型。");
         }
@@ -197,8 +196,17 @@ class Settlement extends Model
 
         }
 
-        $res = $this->allowField(true)->save($data);
+        //会员升级
+        if ($data['tradeType'] == 8) {
 
+            $data['fromAmount'] = $uRes['fictitiousMoney'] - $data['amount'];
+            $data['userToId'] = $data['userId'];
+            $data['tradeDescription'] = '会员升级';
+            $data['createUser'] = $data['userId'];
+            $data['createTime'] = $time;
+
+        }
+        $res = $this->allowField(true)->save($data);
         if(!empty($res)){
             return WSTReturn("申请成功", 1);
         }

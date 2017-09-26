@@ -40,7 +40,6 @@ class User extends Model
         $data['userSex'] = (int)input('userSex');    //0-女 1-男
         $data['trueName'] = input('trueName');
         $data['userPhone'] = input('userPhone');
-        $data['address'] = input('address');
         $data['bankName'] = $bankList[input('bankName/d')];
         $data['bankAccount'] = input('bankAccount');
         $data['accountName'] = input('accountName');
@@ -56,6 +55,8 @@ class User extends Model
                 return WSTReturn("注册信息不完整!");
             }
         }
+
+        $data['address'] = input('address');
 
         //银行分理处
         if(!empty($data['bankNameDetail'])){
