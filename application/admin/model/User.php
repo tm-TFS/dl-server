@@ -246,7 +246,7 @@ class User extends Model
     }
 
     public function getInfo() {
-        $id = (int)input('userId');
+        $id = input('userId/d');
         $u = $this->where('userId',$id)->field('loginPwd, payPwd', true)->find();
 
         if(empty($u)){

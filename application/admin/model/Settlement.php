@@ -31,7 +31,7 @@ class Settlement extends Model
         $u = new MUser();
 
         if(empty($data['userId'])){
-            return WSTReturn("错误的充值对象");
+            return WSTReturn("错误的操作对象");
         }
 
         $uRes = $u->getById($data['userId']);
@@ -54,6 +54,34 @@ class Settlement extends Model
             $data['tradeDescription'] = '充值';
             $data['createUser'] = $data['userId'];
             $data['createTime'] = $time;
+
+        }
+        //提现
+        if ($data['tradeType'] == 3) {
+
+            $serverPercent = 0.06;  //手续费
+            if (empty($uRes)) {
+                return WSTReturn("错误的提现对象");
+            }
+
+            if ($data['amount'] < 100) {
+                return WSTReturn("提现金额必须大于100元");
+            }
+            if ($data['amount'] > $uRes['userMoney']) {
+                return WSTReturn("提现金额不能超出现有奖金");
+            }
+
+            $data['fromAmount'] = $uRes['userMoney'];
+            $data['userFromId'] = $data['userId'];
+            $data['tradeDescription'] = '提现';
+            $data['createUser'] = $data['userId'];
+            $data['createTime'] = $time;
+
+            //提现专用部分
+            $data['bankName'] = $uRes['bankName'];
+            $data['bankAccount'] = $uRes['bankAccount'];
+            $data['accountName'] = $uRes['accountName'];
+            $data['serverCharge'] = $data['amount'] * $serverPercent;
 
         }
         //转账
@@ -119,11 +147,11 @@ class Settlement extends Model
 
                 //奖励日志
                 $w_data[$k] = array(
-                    ['rewardType'=>3, 'userId'=>$v['agentCenter'], 'createDate'=>$date],
-                    ['rewardType'=>4, 'userId'=>$v['recommender'], 'createDate'=>$date],
+                    ['rewardType'=>3, 'userId'=>$v['agentCenter'], 'createDate'=>$date, 'amount' => $report * $v['registerFee']],
+                    ['rewardType'=>4, 'userId'=>$v['recommender'], 'createDate'=>$date, 'amount' => $develop[$recommend['userType']] * $v['registerFee']],
                 );
-                $w_data[$k][0]['amount'] = $report * $v['registerFee'];
-                $w_data[$k][1]['amount'] = $develop[$recommend['userType']] * $v['registerFee'];
+                /*$w_data[$k][0]['amount'] = $report * $v['registerFee'];
+                $w_data[$k][1]['amount'] = $develop[$recommend['userType']] * $v['registerFee'];*/
 
             }
 
@@ -156,7 +184,7 @@ class Settlement extends Model
                 $u_data = [
                     'fictitiousMoney' => $data['fromAmount']
                 ];
-                $result = $u->save($u_data ,['userId'=>$uRes['userId']]);
+                $result = Db::name('user')->where(['userId'=>$uRes['userId']])->update($u_data);
                 //$_sql = $u->getLastSql();dump($_sql);exit;
 
                 //写入奖励日志 用户奖励金累加
@@ -164,16 +192,11 @@ class Settlement extends Model
                 foreach ($w_data as $v){
                     $res = $r->saveAll($v);
                     foreach ($v as $value){
-                        $_res = $u->execute("update f_user set userMoney = userMoney + :amount where userId = :userId", ['userId'=> $value['userId'], 'amount'=> $value['amount']]);
+                        $_res = Db::name('user')->execute("update f_user set userMoney = userMoney + :amount where userId = :userId", ['userId'=> $value['userId'], 'amount'=> $value['amount']]);
                         if(empty($_res)){
                             Db::rollback();
                             return WSTReturn("写入失败", -1);
                         }
-                    }
-
-                    if(empty($res)){
-                        Db::rollback();
-                        return WSTReturn("写入失败", -1);
                     }
                 }
 
@@ -223,6 +246,8 @@ class Settlement extends Model
         $tradeType = input('tradeType');
         $pageId = input('pageId') ? input('pageId') : 1;
         $pageSize = input('pageSize') ? input('pageSize') : 10;
+        $f_date = input('f_date');
+        $e_date = input('e_date');
 
         if(empty($userId)){
             return WSTReturn('会员编码错误');
@@ -234,8 +259,19 @@ class Settlement extends Model
             $where['tradeType'] = $tradeType;
         }
 
+        $where2 = [];
+
+        if($f_date){
+            $where['createTime'] = ['>=', $f_date];
+        }
+
+        if($e_date) {
+            $where2['createTime'] = ['<=', $e_date];
+        }
+
         /********************* 取数据 *************************/
         $rs = $this->where($where)
+            ->where($where2)
             ->order('createTime desc')
             ->paginate($pageSize, false, ['page'=>$pageId]);
         return WSTReturn('', 1, $rs);

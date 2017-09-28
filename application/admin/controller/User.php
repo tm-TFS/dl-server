@@ -157,15 +157,13 @@ class User extends Base{
 
     public function adClick(){
         $m = new MUser();
+        $r = new Mre();
         $adId = input('adId');
         $userId = input('userId');
-        $ad = db('ad_click')->where(['userId' => $userId])->find();
-        $data  = array();
-        $res = 0;
+        $date = date('Y-m-d',time());
+        $ad = db('ad_click')->where(['userId' => $userId, 'createDate' => $date])->find();
         $user = $m->getById($userId);
         $ad_money = config('ad'); //广告点击奖数组
-        $r = new Mre();
-        $request = Request::instance();
 
 
         if(empty($user)){
@@ -173,21 +171,22 @@ class User extends Base{
         }
         $click_money = $ad_money[$user['userType']];  //点击一次的奖励金
 
-        //rewardType  1-广告点击奖 2-组织奖 3-报单奖 4-开拓奖
-        $request->post(['rewardType' => 1]);
-
-
+        $data  = array();
         if(empty($ad)){
-            $data = array('detail' => $adId, 'total' => 1, 'userId' => $userId);
+            $data = array('detail' => $adId, 'total' => 1, 'userId' => $userId, 'createDate' => $date );
 
             Db::startTrans();
             try{
-                $res = db('ad_click')->insert($data);
-                $request->post(['amount' => $click_money]);
-                $r->add();
+                Db::name('ad_click')->insert($data);
+                //rewardType  1-广告点击奖 2-组织奖 3-报单奖 4-开拓奖
+                $res = Db::name('reward')->insert(array('amount' => $click_money, 'rewardType' => 1, 'userId' => $userId, 'createDate' => $date));
+                if($res == 1){  //插入正确返回1
+                    Db::commit();
+                    $this->successReturn('操作成功');
+                }
             }catch (\Exception $e) {
                 Db::rollback();
-                return WSTReturn('操作失败',-1);
+                $this->errorReturn('操作失败');
             }
         } else {
             $id = $ad['id'];
@@ -205,25 +204,31 @@ class User extends Base{
 
             Db::startTrans();
             try{
-                $res = db('ad_click')->where(['id' => $id])->update($data);
-                $request->post(['amount' => $click_money * $ad['total']]);
-                $_res = $r->edit();
-                if($_res['status'] != 1){
-                    Db::rollback();
+                Db::name('ad_click')->where(['id' => $id, 'createDate' => $date])->update($data);
+                $r_data = ['amount' => $click_money * $ad['total']];
+                $r_where = ['createDate' => $date, 'userId' => $userId];
+                $res = $r->where($r_where)->update($r_data);
+                if($res){
+                    Db::commit();
+                    $this->successReturn('操作成功');
                 }
             }catch (\Exception $e) {
                 Db::rollback();
-                return WSTReturn('操作失败',-1);
+                $this->errorReturn('操作失败');
             }
-
-
+            $this->errorReturn('操作失败');
         }
 
-        if($res){
+    }
 
-            $this->successReturn('操作成功');
+    public function getAdClick() {
+        $m = new Mre();
+        $res = $m->getInfo();
+
+        if($res['status'] == 1){
+            $this->successReturn($res);
         } else {
-            $this->errorReturn('操作失败');
+            $this->successReturn("");
         }
     }
 
