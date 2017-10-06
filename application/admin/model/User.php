@@ -4,6 +4,7 @@ namespace app\admin\model;
 
 use think\Model;
 use think\Db;
+use think\Cache;
 use think\Request;
 
 class User extends Model
@@ -141,20 +142,43 @@ class User extends Model
         if(empty($data['loginPwd'])){
             return WSTReturn("请输入登录密码");
         }
-        if(empty($data['code'])){
-            return WSTReturn("请输入验证码");
-        }
 
         $time = date('Y-m-d h:i:s',time());
 
-        $user = $this->where(array('loginName' => $data['loginName'], 'loginPwd' => $data['loginPwd']))->find();
+        $user = Db::name('user')->where(array('loginName' => $data['loginName'], 'loginPwd' => $data['loginPwd']))->find();
         if(empty($user)){
             return WSTReturn("账号或密码错误");
         }
         $this->save(array('lastTime' => $time, 'lastIP' => $request->ip()), ['userId' => $user['userId']]);
+/*
+        $token = md5($data['loginName'].time());
+
+        //写入缓存
+        Cache::tag('token')->set($user['userId'],$token);
+
+        $this->response['status'] = 1;
+        $this->response['content'] = $res;
+        $this->response['token'] = $token;*/
 
         return WSTReturn('', 1, $user);
 
+    }
+
+    public function checkPayPwd() {
+        $data = input();
+        if(empty($data['payPwd'])){
+            return WSTReturn('密码不能为空');
+        }
+        $res = $this->find(['userId' => $data['userId'], 'payPwd' => md5($data['payPwd'])]);
+        if(empty($res)){
+            return WSTReturn('二级密码错误');
+        }
+        return WSTReturn("成功", 1);
+    }
+
+    public function getMaxId() {
+        $userId = $this->max('userId');
+        return WSTReturn("", 1, $userId);
     }
 
     public function changeInfo () {
@@ -222,20 +246,23 @@ class User extends Model
     public function getSort() {
         $userId = input('userId');
 
-        $f_u = $this->where('userId',$userId)->column('userId, loginName, trueName, userType');
+        $f_u = Db::name('user')->where('userId',$userId)->field('userId, loginName, trueName, userType, createTime')->select();
 
-        $s_u = $this->where(array('leaderNo' => $userId))->column('userId, loginName, trueName, userType');
+        $s_u = Db::name('user')->where(array('leaderNo' => $userId))->field('userId, loginName, trueName, userType, createTime')->select();
 
         if(!empty($s_u)){
-            $f_u['sub'] = $s_u;
-            foreach ($f_u['sub'] as $key => &$value){
-                $t_u = $this->where(array('leaderNo' => $value['userId']))->column('userId, loginName, trueName, userType');
-                if(!empty($t_u)){
-                    $value['sub'] = $t_u;
-                    foreach ($value['sub'] as $key2 => &$value2){
-                        $fourth_u = $this->where(array('leaderNo' => $value2['userId']))->column('userId, loginName, trueName, userType');
-                        if(!empty($fourth_u)){
-                            $value2['sub'] = $fourth_u;
+            //$f_u['sub'] = $s_u;
+            foreach($f_u as &$f_value){
+                $f_value['sub'] = $s_u;
+                foreach ($f_value['sub'] as $key => &$value){
+                    $t_u = Db::name('user')->where(array('leaderNo' => $value['userId']))->field('userId, loginName, trueName, userType, createTime')->select();
+                    if(!empty($t_u)){
+                        $value['sub'] = $t_u;
+                        foreach ($value['sub'] as $key2 => &$value2){
+                            $fourth_u = Db::name('user')->where(array('leaderNo' => $value2['userId']))->field('userId, loginName, trueName, userType, createTime')->select();
+                            if(!empty($fourth_u)){
+                                $value2['sub'] = $fourth_u;
+                            }
                         }
                     }
                 }
@@ -262,7 +289,7 @@ class User extends Model
 
     public function getTree(){
         $userId = input('userId');
-        $u = $this->order('leaderNo asc')->column('userId, loginName as title, trueName, userType, leaderNo');
+        $u = $this->order('leaderNo asc')->column('userId, loginName as title, trueName, userType, leaderNo, createTime');
 
         //该树为 一维数组 靠count 来判断层级
         /*$c_tree = self::tree($u);

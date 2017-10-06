@@ -92,8 +92,6 @@ class Settlement extends Model
 
             if(empty($userToId)){
                 return WSTReturn("转账会员编号不能为空！");
-            }else if($userToId != $data['rUserToId']) {
-                return WSTReturn("两次输入会员编号不一致！");
             } else {
                 $toUser = $u->where(array('userId' => $userToId))->field('userId, fictitiousMoney')->find();
             }
@@ -103,14 +101,37 @@ class Settlement extends Model
             }
 
             if (empty($data['amount'])) {
-                return WSTReturn("充值金额不能为空");
+                return WSTReturn("转账电子币不能为空");
             }
 
-            $data['toAmount'] = $uRes['fictitiousMoney'];
+
+            $data['fromAmount'] = $uRes['fictitiousMoney'] - $data['amount'];
+            $data['toAmount'] = $toUser['fictitiousMoney'] + $data['amount'];
             $data['userToId'] = $userToId;
             $data['userFromId'] = $data['userId'];
             $data['createUser'] = $data['userId'];
             $data['createTime'] = $time;
+            $data['status'] = 10;
+
+            if(!empty($data['remark'])){
+                $data['tradeDescription'] = $data['remark'];
+            }
+
+            Db::startTrans();
+            try{
+                $res = $this->allowField(true)->save($data);
+                $u_data = [
+                    'fictitiousMoney' => $data['fromAmount'],
+                ];
+                $u->save($u_data, ['userId' => $data['userId']]);
+                $to_u_data = ['fictitiousMoney' => $data['toAmount']];
+                $u->save($to_u_data, ['userId' => $data['userToId']]);
+                Db::commit();
+            }catch (\Exception $e) {
+                Db::rollback();
+                return WSTReturn('操作失败',-1);
+            }
+            return WSTReturn("申请成功", 1);
 
         }
 
@@ -219,6 +240,48 @@ class Settlement extends Model
 
         }
 
+        //奖金转币
+        if ($data['tradeType'] == 7) {
+
+            if (empty($uRes)) {
+                return WSTReturn("错误的操作对象");
+            }
+
+            if (empty($data['amount'])) {
+                return WSTReturn("转币金额不能为空");
+            }
+
+            if ($data['amount'] > $uRes['userMoney']) {
+                return WSTReturn("转币金额不能大于奖金余额");
+            }
+
+            $data['fromAmount'] = $uRes['userMoney'] - $data['amount'];
+            $data['userToId'] = $data['userId'];
+            $data['userFromId'] = $data['userId'];
+            $data['createUser'] = $data['userId'];
+            $data['createTime'] = $time;
+            $data['status'] = 10;
+
+            if(!empty($data['remark'])){
+                $data['tradeDescription'] = $data['remark'];
+            }
+
+            Db::startTrans();
+            try{
+                $res = $this->allowField(true)->save($data);
+                $u_data = [
+                    'userMoney' => $data['fromAmount'],
+                    'fictitiousMoney' => $uRes['fictitiousMoney'] + $data['amount']
+                ];
+                $u->save($u_data, ['userId' => $data['userId']]);
+                Db::commit();
+            }catch (\Exception $e) {
+                Db::rollback();
+                return WSTReturn('操作失败',-1);
+            }
+            return WSTReturn("申请成功", 1);
+
+        }
         //会员升级
         if ($data['tradeType'] == 8) {
 

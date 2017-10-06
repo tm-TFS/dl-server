@@ -6,6 +6,7 @@ use app\admin\model\Test as MTest;
 use app\admin\model\Settlement as Mse;
 use app\admin\model\Reward as Mre;
 use think\Db;
+use think\Cache;
 use \think\Request;
 class User extends Base{
 
@@ -31,10 +32,62 @@ class User extends Base{
         $res = $m->login();
 
         if($res['status'] == 1){
-            $this->successReturn($res);
+
+            $token = md5($res['data']['userId'].time());
+
+            //写入缓存  时效12小时
+            Cache::tag('token')->set($res['data']['userId'],$token, 43200);
+
+            $this->response['status'] = 1;
+            $this->response['content'] = $res;
+            $this->response['token'] = $token;
+            $this->ajaxReturn();
+
         } else {
             $this->errorReturn($res['msg']);
         }
+    }
+
+    public function checkPayPwd() {
+        $m = new MUser();
+
+        if(empty(input('payPwd'))){
+            $time = Cache::tag('payPwd')->get(input('userId'));
+            if($time && $time + 3600 > time()){
+                $this->successReturn(['pwdStatus' => 1]);
+            } else {
+                $this->successReturn(['pwdStatus' => -1]);
+            }
+        }
+
+        $res = $m->checkPayPwd();
+
+        if($res['status'] == 1){
+            Cache::tag('payPwd')->set(input('userId'), time(), 43200);
+            $this->successReturn(['pwdStatus' => 1]);
+        } else {
+            $this->errorReturn($res['msg']);
+        }
+    }
+
+    public function getMaxId() {
+        $m = new MUser();
+        $res = $m->getMaxId();
+
+        if($res['status'] == 1){
+            $this->successReturn($res['data']);
+        } else {
+            $this->errorReturn($res['msg']);
+        }
+    }
+
+    public function getVerify () {
+        $str1 = rand(0,9);
+        $str2 = rand(0,9);
+        $str3 = rand(0,9);
+        $str4 = rand(0,9);
+        $str = $str1 . $str2. $str3 . $str4;
+        $this->successReturn($str);
     }
 
     public function changeInfo () {
@@ -75,7 +128,7 @@ class User extends Base{
         $res = $m->getSort();
 
         if($res['status'] == 1){
-            $this->successReturn($res);
+            $this->successReturn($res['data']);
         } else {
             $this->errorReturn($res['msg']);
         }
@@ -86,7 +139,7 @@ class User extends Base{
         $res = $m->getTree();
 
         if($res['status'] == 1){
-            $this->successReturn($res);
+            $this->successReturn($res['data']);
         } else {
             $this->errorReturn($res['msg']);
         }
@@ -106,7 +159,7 @@ class User extends Base{
         $res = $m->pageQuery($where, $order);
 
         if($res['status'] == 1){
-            $this->successReturn($res);
+            $this->successReturn($res['data']);
         } else {
             $this->errorReturn($res['msg']);
         }

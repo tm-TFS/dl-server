@@ -20,7 +20,35 @@ use think\Db;
 function genTree($items, $id = 'id', $pid ="pid") {
     $map  = [];
     $tree = [];
-    foreach ($items as &$it){ $map[$it[$id]] = &$it; }  //数据的ID名生成新的引用索引树
+
+    //拼凑title
+    foreach ($items as &$it){
+        $type = '';
+        switch($it['userType']){
+            case 1:
+                $type = '业务员';
+                break;
+            case 2:
+                $type = '主任';
+                break;
+            case 3:
+                $type = '经理';
+                break;
+            case 4:
+                $type = '总监';
+                break;
+            default:
+                break;
+        }
+        $time = strtotime($it['createTime']);
+        $it['title'] = $it['title'] . ' (' . date("Y-m-d", $time) . ')' . ' (' .$type . ')';
+        $it['expand'] = true;
+
+
+        //数据的ID名生成新的引用索引树
+        $map[$it[$id]] = &$it;
+    }
+
     foreach ($items as &$it){
         $parent = &$map[$it[$pid]];
         if($parent) {
