@@ -71,7 +71,8 @@ class Settlement extends Model
                 return WSTReturn("提现金额不能超出现有奖金");
             }
 
-            $data['fromAmount'] = $uRes['userMoney'];
+            //提现时，先减去提现金额
+            $data['fromAmount'] = $uRes['userMoney'] - $data['amount'];
             $data['userFromId'] = $data['userId'];
             $data['tradeDescription'] = '提现';
             $data['createUser'] = $data['userId'];
@@ -82,6 +83,20 @@ class Settlement extends Model
             $data['bankAccount'] = $uRes['bankAccount'];
             $data['accountName'] = $uRes['accountName'];
             $data['serverCharge'] = $data['amount'] * $serverPercent;
+
+            Db::startTrans();
+            try{
+                $res = $this->allowField(true)->save($data);
+                $u_data = [
+                    'userMoney' => $data['fromAmount']
+                ];
+                $u->save($u_data, ['userId' => $data['userId']]);
+                Db::commit();
+            }catch (\Exception $e) {
+                Db::rollback();
+                return WSTReturn('操作失败',-1);
+            }
+            return WSTReturn("申请成功", 1);
 
         }
         //转账
@@ -297,6 +312,82 @@ class Settlement extends Model
             return WSTReturn("申请成功", 1);
         }
         return WSTReturn("提交失败");
+    }
+
+
+    /**
+     *  审核申请
+     *  tradeType：2-充值 3-提现
+     *  operation: 1-同意 2-不同意
+     */
+    public function checkSettlement(){
+        $u = new MUser();
+        $id = input('id');
+        $operation = input('operation');
+        if(empty($id)){
+            return WSTReturn('申请编码错误');
+        }
+        $res = $this->get(['id'=>$id]);
+        $type = $res['tradeType'];
+        if(empty($res)){
+            return WSTReturn('申请编码错误');
+        } else if(!($type == 3 || $type == 2)){
+            return WSTReturn('申请类型错误');
+        }
+        if($type == 3){
+            $user = $u->getById($res['userFromId']);
+        } else if($type == 2){
+            $user = $u->getById($res['userToId']);
+        }
+
+        if($res['status'] != 1){
+            return WSTReturn('该申请已被处理，不需要继续操作');
+        }
+
+        if(empty($user)){
+            return WSTReturn('会员编码错误');
+        }
+
+        //提现
+        if($type == 3){
+            if($operation == 1){
+                $this->save(['status' => 10], ['id' => $id]);
+            } else {
+                Db::startTrans();
+                try{
+                    $this->allowField(true)->save(['status' => 11], ['id' => $id]);
+                    $u_data = [
+                        'fictitiousMoney' => $user['userMoney'] + $res['amount'],
+                    ];
+                    $u->save($u_data, ['userId' => $user['userId']]);
+                    Db::commit();
+                }catch (\Exception $e) {
+                    Db::rollback();
+                    return WSTReturn('操作失败',-1);
+                }
+            }
+        }
+        //充值
+        if($type == 2){
+            if($operation == 1){
+                Db::startTrans();
+                try{
+                    $this->save(['status' => 10], ['id' => $id]);
+                    $u_data = [
+                        'fictitiousMoney' => $user['userMoney'] + $res['amount'],
+                    ];
+                    $u->save($u_data, ['userId' => $user['userId']]);
+                    Db::commit();
+                }catch (\Exception $e) {
+                    Db::rollback();
+                    return WSTReturn('操作失败',-1);
+                }
+
+            } else {
+                $this->save(['status' => 11], ['id' => $id]);
+            }
+        }
+        return WSTReturn('',1, "操作成功");
     }
 
     /**

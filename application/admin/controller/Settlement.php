@@ -61,4 +61,17 @@ class Settlement extends Base{
         $this->successReturn($list);
     }
 
+    //处理 提现 充值申请
+    public function checkSettlement() {
+        $m = new M();
+
+        $res = $m->checkSettlement();
+
+        if($res['status'] == 1){
+            $this->successReturn($res['data']);
+        } else {
+            $this->errorReturn($res['msg']);
+        }
+    }
+
 }
