@@ -169,7 +169,7 @@ class User extends Model
         if(empty($data['payPwd'])){
             return WSTReturn('密码不能为空');
         }
-        $res = $this->find(['userId' => $data['userId'], 'payPwd' => md5($data['payPwd'])]);
+        $res = $this->where(['userId' => $data['userId'], 'payPwd' => md5($data['payPwd'])])->find();
         if(empty($res)){
             return WSTReturn('二级密码错误');
         }
@@ -184,7 +184,7 @@ class User extends Model
     public function changeInfo () {
         $data = array ();
         $id = (int)input('userId');
-        $data['userSex'] = (int)input('userSex');    //0-女 1-男
+        $data['userSex'] = input('userSex');    //0-女 1-男
         $data['userPhone'] = input('userPhone');
         $data['address'] = input('address');
         $data['bankName'] = input('bankName');
@@ -192,7 +192,6 @@ class User extends Model
         $data['accountName'] = input('accountName');
 
         //以上部分需要验证是否为空
-
         foreach ($data as $v){
             if($v == null || $v ==''){
                 return WSTReturn("修改信息不完整!");

@@ -357,7 +357,7 @@ class Settlement extends Model
                 try{
                     $this->allowField(true)->save(['status' => 11], ['id' => $id]);
                     $u_data = [
-                        'fictitiousMoney' => $user['userMoney'] + $res['amount'],
+                        'userMoney' => $user['userMoney'] + $res['amount'],
                     ];
                     $u->save($u_data, ['userId' => $user['userId']]);
                     Db::commit();
@@ -374,7 +374,7 @@ class Settlement extends Model
                 try{
                     $this->save(['status' => 10], ['id' => $id]);
                     $u_data = [
-                        'fictitiousMoney' => $user['userMoney'] + $res['amount'],
+                        'fictitiousMoney' => $user['fictitiousMoney'] + $res['amount'],
                     ];
                     $u->save($u_data, ['userId' => $user['userId']]);
                     Db::commit();
