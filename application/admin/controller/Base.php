@@ -30,7 +30,7 @@ class Base extends Controller{
     }
 
     protected function getToken ($name) {
-        return Cache::tag('token')->get($name);
+        return Cache::get('token' . $name);
     }
 
     /**

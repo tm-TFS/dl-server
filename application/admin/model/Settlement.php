@@ -160,11 +160,10 @@ class Settlement extends Model
             //获取用户数组信息
             $users = array();
             $_u = $u->getByIds();
-
             if($_u['status'] == 1){
                 $users = $_u['data'];
             } else {
-                $this->errorReturn($u['msg']);
+                return WSTReturn($_u['msg']);
             }
 
             // rewardType 1-广告点击奖 2-组织奖 3-报单奖 4-开拓奖

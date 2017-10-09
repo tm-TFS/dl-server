@@ -12,6 +12,19 @@ use \think\Request;
 
 class User extends Base
 {
+    public function __construct() {
+        //$direct_action = ['test', 'login', 'checkLoginName', 'getVerify', 'clearCache', 'getCache'];
+        $direct_action = ['test', 'login', 'checkloginname', 'getverify', 'clearcache', 'getcache'];
+        $request = Request::instance();
+        $action = $request->action();
+        $rs = in_array($action,$direct_action);
+        //dump($action);exit;
+        if($rs){
+            return;
+        }
+        //token 验证
+        $this->token_check(input('userId'), input('token'));
+    }
 
     public function test()
     {
@@ -32,6 +45,18 @@ class User extends Base
         }
     }
 
+    public function checkLoginName(){
+        $m = new MUser();
+
+        $res = $m->get(['loginName' => input('loginName')]);
+
+        if (empty($res)) {
+            $this->successReturn('未被占有');
+        } else {
+            $this->errorReturn('已被占有');
+        }
+    }
+
     public function login()
     {
         $m = new MUser();
@@ -42,7 +67,7 @@ class User extends Base
             $token = md5($res['data']['userId'] . time());
 
             //写入缓存  时效12小时
-            Cache::tag('token')->set($res['data']['userId'], $token, 43200);
+            Cache::set('token' . $res['data']['userId'], $token, 43200);
 
             $this->response['status'] = 1;
             $this->response['content'] = $res;
@@ -65,7 +90,7 @@ class User extends Base
         $res = $m->checkPayPwd();
 
         if ($res['status'] == 1) {
-            Cache::tag('payPwd')->set(input('userId'), time(), 43200);
+            Cache::set('payPwd' . input('userId'), time(), 43200);
             $this->successReturn(['pwdStatus' => 1]);
         } else {
             $this->errorReturn($res['msg']);
@@ -74,7 +99,7 @@ class User extends Base
 
     public function getCheckPwdCache()
     {
-        $time = Cache::tag('payPwd')->get(input('userId'));
+        $time = Cache::get('payPwd' . input('userId'));
         if ($time && $time + 3600 > time()) {
             $this->successReturn(['pwdStatus' => 1]);
         } else {
@@ -310,14 +335,13 @@ class User extends Base
 
     public function clearCache()
     {
-        $tag = input('tag');
-        Cache::clear($tag);
+        Cache::clear();
         $this->successReturn("成功");
     }
 
     public function getCache()
     {
-        $time = Cache::tag('payPwd')->get(input('userId'));
+        $time = Cache::get(input('type'). input('userId'));
         $this->successReturn($time);
     }
 

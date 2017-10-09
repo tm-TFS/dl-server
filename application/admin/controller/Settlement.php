@@ -4,10 +4,10 @@ namespace app\admin\controller;
 use app\admin\model\Settlement as M;
 
 class Settlement extends Base{
-    /*public function __construct() {
+    public function __construct() {
         //token 验证
-        $this->token_check(input('uid'), input('token'));
-    }*/
+        $this->token_check(input('userId'), input('token'));
+    }
 
     //后台充值
     public function deal(){

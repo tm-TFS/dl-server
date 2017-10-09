@@ -299,11 +299,11 @@ class User extends Model
 
     public function getByIds(){
         $userIds = input('userIds');
-
         if(empty($userIds)){
             return WSTReturn("用户编号不能为空", -1);
         }
 
+        //dump($userIds);exit;
         $u = $this->all($userIds);
 
         if(empty($u)){
