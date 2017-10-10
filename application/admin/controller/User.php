@@ -14,7 +14,7 @@ class User extends Base
 {
     public function __construct() {
         //$direct_action = ['test', 'login', 'checkLoginName', 'getVerify', 'clearCache', 'getCache'];
-        $direct_action = ['test', 'login', 'checkloginname', 'getverify', 'clearcache', 'getcache', 'register', 'getinfo'];
+        $direct_action = ['test', 'login', 'checkloginname', 'getverify', 'clearcache', 'getcache', 'register', 'getinfo', 'getsort'];
         $request = Request::instance();
         $action = $request->action();
         $rs = in_array($action,$direct_action);

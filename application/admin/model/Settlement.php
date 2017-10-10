@@ -299,13 +299,41 @@ class Settlement extends Model
         //会员升级
         if ($data['tradeType'] == 8) {
 
-            $data['fromAmount'] = $uRes['fictitiousMoney'] - $data['amount'];
+            if($data['userType'] == $uRes['userType']){
+                return WSTReturn("该会员已经是该等级或高于该等级，不需要进行升级");
+            }
+
+            $amountList = config('registerFee');
+            $amount = $amountList[$data['userType']] - $amountList[$uRes['userType']];
+
+            if($uRes['fictitiousMoney'] - $amount < 0){
+                return WSTReturn("电子币不足，请充值或用奖金换取电子币");
+            }
+
+            $data['amount'] = $amount;
+            $data['fromAmount'] = $uRes['fictitiousMoney'] - $amount;
             $data['userToId'] = $data['userId'];
             $data['tradeDescription'] = '会员升级';
             $data['createUser'] = $data['userId'];
             $data['createTime'] = $time;
 
+            Db::startTrans();
+            try{
+                $res = $this->allowField(true)->save($data);
+                $u_data = [
+                    'fictitiousMoney' => $data['fromAmount'],
+                    'userType' => $data['userType']
+                ];
+                $u->save($u_data, ['userId' => $data['userId']]);
+                Db::commit();
+            }catch (\Exception $e) {
+                Db::rollback();
+                return WSTReturn('操作失败',-1);
+            }
+            return WSTReturn("申请成功", 1);
+
         }
+
         $res = $this->allowField(true)->save($data);
         if(!empty($res)){
             return WSTReturn("申请成功", 1);
