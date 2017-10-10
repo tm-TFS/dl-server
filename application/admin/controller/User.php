@@ -14,7 +14,7 @@ class User extends Base
 {
     public function __construct() {
         //$direct_action = ['test', 'login', 'checkLoginName', 'getVerify', 'clearCache', 'getCache'];
-        $direct_action = ['test', 'login', 'checkloginname', 'getverify', 'clearcache', 'getcache'];
+        $direct_action = ['test', 'login', 'checkloginname', 'getverify', 'clearcache', 'getcache', 'register', 'getinfo'];
         $request = Request::instance();
         $action = $request->action();
         $rs = in_array($action,$direct_action);
@@ -181,6 +181,21 @@ class User extends Base
     {
         $m = new MUser();
         $res = $m->getTree();
+
+        if ($res['status'] == 1) {
+            $this->successReturn($res['data']);
+        } else {
+            $this->errorReturn($res['msg']);
+        }
+    }
+
+    public function getAgentCenter() {
+        $m = new MUser();
+        $where = array(
+            'userType' => 4,
+        );
+        $order = 'userStatus asc, createTime desc';
+        $res = $m->pageQuery($where, $order);
 
         if ($res['status'] == 1) {
             $this->successReturn($res['data']);

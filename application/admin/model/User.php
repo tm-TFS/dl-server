@@ -9,6 +9,7 @@ use think\Request;
 
 class User extends Model
 {
+    const TYPE_VALUE = [0,1,3,4,6];
 
     /**
      * 分页
@@ -245,22 +246,91 @@ class User extends Model
     public function getSort() {
         $userId = input('userId');
 
-        $f_u = Db::name('user')->where('userId',$userId)->field('userId, loginName, trueName, userType, createTime')->select();
+        $count_arr = [
+            'l_z_count' => 0,
+            'l_y_count' => 0,
+            'l_x_count' => 0,
+            'r_z_count' => 0,
+            'r_y_count' => 0,
+            'r_x_count' => 0,
+        ];
 
-        $s_u = Db::name('user')->where(array('leaderNo' => $userId))->field('userId, loginName, trueName, userType, createTime')->select();
+        $f_u = Db::name('user')->where('userId',$userId)->field('userId, loginName, trueName, userType, direction, createTime')->select();
+
+        $s_u = Db::name('user')->where(array('leaderNo' => $userId))->field('userId, loginName, trueName, userType, direction, createTime')->select();
 
         if(!empty($s_u)){
             //$f_u['sub'] = $s_u;
             foreach($f_u as &$f_value){
+                $f_value = array_merge($f_value, $count_arr);
                 $f_value['sub'] = $s_u;
                 foreach ($f_value['sub'] as $key => &$value){
-                    $t_u = Db::name('user')->where(array('leaderNo' => $value['userId']))->field('userId, loginName, trueName, userType, createTime')->select();
+                    $t_u = Db::name('user')->where(array('leaderNo' => $value['userId']))->field('userId, loginName, trueName, userType, direction, createTime')->select();
+                    $value = array_merge($value, $count_arr);
+                    if($value['direction'] == 1){     //direction 1-左 2-右
+                        $f_value['l_z_count'] = self::TYPE_VALUE[$value['userType']];
+                    } else if($value['direction'] == 2){
+                        $f_value['r_z_count'] = self::TYPE_VALUE[$value['userType']];
+                    }
                     if(!empty($t_u)){
                         $value['sub'] = $t_u;
                         foreach ($value['sub'] as $key2 => &$value2){
-                            $fourth_u = Db::name('user')->where(array('leaderNo' => $value2['userId']))->field('userId, loginName, trueName, userType, createTime')->select();
+                            $fourth_u = Db::name('user')->where(array('leaderNo' => $value2['userId']))->field('userId, loginName, trueName, userType, direction, createTime')->select();
+                            $value2 = array_merge($value2, $count_arr);
+                            if($value2['direction'] == 1){     //direction 1-左 2-右
+                                $value['l_z_count'] = self::TYPE_VALUE[$value2['userType']];
+                            } else if($value2['direction'] == 2){
+                                $value['r_z_count'] = self::TYPE_VALUE[$value2['userType']];
+                            }
+
                             if(!empty($fourth_u)){
                                 $value2['sub'] = $fourth_u;
+                                foreach ($value2['sub'] as $key3 => &$value3){
+                                    //计算3层订单数
+                                    $value3 = array_merge($value3, $count_arr);
+                                    //dump($value3);exit;
+                                    if($value3['direction'] == 1){     //direction 1-左 2-右
+                                        $value2['l_z_count'] = self::TYPE_VALUE[$value3['userType']];
+                                    } else if($value3['direction'] == 2){
+                                        $value2['r_z_count'] = self::TYPE_VALUE[$value3['userType']];
+                                    }
+                                    //累加到2层
+                                    if($value2['direction'] == 1){     //direction 1-左 2-右
+                                        $value['l_z_count'] = $value['l_z_count'] + $value2['l_z_count'] + $value2['r_z_count'];
+                                    } else if($value3['direction'] == 2){
+                                        $value['r_z_count'] = $value['r_z_count'] + $value2['l_z_count'] + $value2['r_z_count'];
+                                    }
+                                    //累加到1层
+                                    if($value['direction'] == 1){     //direction 1-左 2-右
+                                        $f_value['l_z_count'] = $f_value['l_z_count'] + $value['l_z_count'] + $value['r_z_count'];
+                                    } else if($value3['direction'] == 2){
+                                        $f_value['r_z_count'] = $f_value['r_z_count'] + $value['l_z_count'] + $value['r_z_count'];
+                                    }
+                                    //计算余数据 第1层
+                                    $differ = $f_value['l_z_count'] - $f_value['r_z_count'];
+                                    if($differ >= 0){
+                                        $f_value['l_y_count'] = $differ;
+                                    } else {
+                                        $f_value['r_y_count'] = abs($differ);
+                                    }
+
+                                    //第2层
+                                    $differ = $value['l_z_count'] - $value['r_z_count'];
+                                    if($differ >= 0){
+                                        $value['l_y_count'] = $differ;
+                                    } else {
+                                        $value['r_y_count'] = abs($differ);
+                                    }
+
+                                    //第3层
+                                    $differ = $value3['l_z_count'] - $value3['r_z_count'];
+                                    if($differ >= 0){
+                                        $value3['l_y_count'] = $differ;
+                                    } else {
+                                        $value3['r_y_count'] = abs($differ);
+                                    }
+
+                                }
                             }
                         }
                     }
@@ -270,6 +340,7 @@ class User extends Model
 
         return WSTReturn("", 1, $f_u);
     }
+
 
     public function getInfo() {
         $id = input('userId/d');
@@ -287,7 +358,6 @@ class User extends Model
     }
 
     public function getTree(){
-        $userId = input('userId');
         $u = $this->order('leaderNo asc')->column('userId, loginName as title, trueName, userType, leaderNo, createTime');
 
         //该树为 一维数组 靠count 来判断层级
