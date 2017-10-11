@@ -9,7 +9,6 @@ use think\Request;
 
 class User extends Model
 {
-    const TYPE_VALUE = [0, 1, 3, 4, 6];
 
     /**
      * 分页
@@ -252,6 +251,9 @@ class User extends Model
 
     public function getSort()
     {
+
+        $TYPE_VALUE = [0, 1, 3, 4, 6];
+
         $userId = input('userId');
 
         $count_arr = [
@@ -276,9 +278,9 @@ class User extends Model
                     $t_u = Db::name('user')->where(array('leaderNo' => $value['userId']))->field('userId, loginName, trueName, userType, direction, createTime')->select();
                     $value = array_merge($value, $count_arr);
                     if ($value['direction'] == 1) {     //direction 1-左 2-右
-                        $f_value['l_z_count'] = self::TYPE_VALUE[$value['userType']];
+                        $f_value['l_z_count'] = $TYPE_VALUE[$value['userType']];
                     } else if ($value['direction'] == 2) {
-                        $f_value['r_z_count'] = self::TYPE_VALUE[$value['userType']];
+                        $f_value['r_z_count'] = $TYPE_VALUE[$value['userType']];
                     }
                     $value['sub'] = [['userId'=>0, 'direction' => 0],['userId'=>0, 'direction' => 0]];
                     if (!empty($t_u)) {
@@ -287,9 +289,9 @@ class User extends Model
                             $fourth_u = Db::name('user')->where(array('leaderNo' => $value2['userId']))->field('userId, loginName, trueName, userType, direction, createTime')->select();
                             $value2 = array_merge($value2, $count_arr);
                             if ($value2['direction'] == 1) {     //direction 1-左 2-右
-                                $value['l_z_count'] = self::TYPE_VALUE[$value2['userType']];
+                                $value['l_z_count'] = $TYPE_VALUE[$value2['userType']];
                             } else if ($value2['direction'] == 2) {
-                                $value['r_z_count'] = self::TYPE_VALUE[$value2['userType']];
+                                $value['r_z_count'] = $TYPE_VALUE[$value2['userType']];
                             }
                             $value2['sub'] = [['userId'=>0, 'direction' => 0],['userId'=>0, 'direction' => 0]];
                             if (!empty($fourth_u)) {
@@ -299,9 +301,9 @@ class User extends Model
                                     $value3 = array_merge($value3, $count_arr);
                                     //dump($value3);exit;
                                     if ($value3['direction'] == 1) {     //direction 1-左 2-右
-                                        $value2['l_z_count'] = self::TYPE_VALUE[$value3['userType']];
+                                        $value2['l_z_count'] = $TYPE_VALUE[$value3['userType']];
                                     } else if ($value3['direction'] == 2) {
-                                        $value2['r_z_count'] = self::TYPE_VALUE[$value3['userType']];
+                                        $value2['r_z_count'] = $TYPE_VALUE[$value3['userType']];
                                     }
                                     //累加到2层
                                     if ($value2['direction'] == 1) {     //direction 1-左 2-右
