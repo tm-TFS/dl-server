@@ -169,7 +169,6 @@ class User extends Base
     {
         $m = new MUser();
         $res = $m->getSort();
-
         if ($res['status'] == 1) {
             $this->successReturn($res['data']);
         } else {

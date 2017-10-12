@@ -251,10 +251,9 @@ class User extends Model
 
     public function getSort()
     {
+        $userId = input('userId');
 
         $TYPE_VALUE = [0, 1, 3, 4, 6];
-
-        $userId = input('userId');
 
         $count_arr = [
             'l_z_count' => 0,
