@@ -57,7 +57,6 @@ class Reward extends Model
         return WSTReturn("", 1, $list);
     }
 
-
     public function getTotalAmount(){
         $userId = input('userId/d');
 
@@ -72,4 +71,5 @@ class Reward extends Model
         return WSTReturn("", 1, $total);
 
     }
+
 }

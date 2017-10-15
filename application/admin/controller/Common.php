@@ -15,13 +15,33 @@ class Common extends Base{
             if($info){
                 // 成功上传后 获取上传信息
                 // 输出 20160820/42a79759f284b767dfcb2a0197904287.jpg
-                echo request()->root(true) . '/uploads/' . $info->getSaveName();
+                $imgUrl = request()->root(true) . '/uploads/' . $info->getSaveName();
+                $imgUrl = str_replace("\\","/",$imgUrl);
+                $this->successReturn($imgUrl);
                 // 输出 42a79759f284b767dfcb2a0197904287.jpg
                 //echo $info->getFilename();
             }else{
                 // 上传失败获取错误信息
-                echo $file->getError();
+                $err = $file->getError();
+                $this->errorReturn($err);
             }
+        }
+    }
+
+    public function getArticle() {
+        $type = input('type');
+        $article = Db::name('article')->where(['type' => $type])->find();
+        $this->successReturn($article['content']);
+    }
+
+    public function editArticle(){
+        $type = input('type');
+        $content = input('content');
+        $res = DB::name('article')->where(['type' => $type])->update(['content' => $content]);
+        if($res){
+            $this->successReturn('success');
+        } else {
+            $this->errorReturn('失败');
         }
     }
 

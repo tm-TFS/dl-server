@@ -6,6 +6,7 @@ use app\admin\model\User as MUser;
 use app\admin\model\Test as MTest;
 use app\admin\model\Settlement as Mse;
 use app\admin\model\Reward as Mre;
+use app\admin\model\AdList as Mad;
 use think\Db;
 use think\Cache;
 use \think\Request;
@@ -343,7 +344,27 @@ class User extends Base
         if ($res['status'] == 1) {
             $this->successReturn($res);
         } else {
-            $this->successReturn("");
+            $this->errorReturn("");
+        }
+    }
+
+    public function adSave() {
+        $m = new Mad();
+        $res = $m->add();
+        if ($res['status'] == 1) {
+            $this->successReturn($res['data']);
+        } else {
+            $this->errorReturn($res['msg']);
+        }
+    }
+
+    public function getAdList() {
+        $m = new Mad();
+        $res = $m->getList();
+        if ($res['status'] == 1) {
+            $this->successReturn($res['data']);
+        } else {
+            $this->errorReturn($res['msg']);
         }
     }
 
