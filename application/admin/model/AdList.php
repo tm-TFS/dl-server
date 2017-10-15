@@ -24,9 +24,9 @@ class AdList extends Model{
             }
             $data[] = $_arr;
         }
-        /*if(count($ad_list) != 10){
+        if(count($ad_list) != 10){
             return WSTReturn("广告数量不正确，应必须为10个");
-        }*/
+        }
 
         $this->where('id', '>', 0)->delete();
         $res = $this->saveAll($data);
