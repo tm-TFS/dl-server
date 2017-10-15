@@ -14,9 +14,8 @@ class Api extends Base{
                 Db::name('user')->execute("update f_user set userMoney = userMoney + :amount where userId = :userId", ['userId'=> $value['userId'], 'amount'=> $value['amount']]);
                 //Db::name('user')->where(['userId' => $value['userId']])->update(['userMoney' => ['exp', "userMoney + $value('amount')"]]);
             }
-            $this->successReturn('成功');
         }
-        $this->errorReturn('失败');
+        echo count($reward);
     }
 
 }
