@@ -270,52 +270,107 @@ class User extends Model
 
         foreach ($f_u as &$f_value) {
             $f_value = array_merge($f_value, $count_arr);
-            $f_value['sub'] = [['userId'=>0, 'direction' => 0],['userId'=>0, 'direction' => 0]];
+            $f_value['sub'] = [['userId'=>0, 'direction' => 1],['userId'=>0, 'direction' => 2]];
             if (!empty($s_u)) {
-                $f_value['sub'] = $s_u;
+                //对direction 排序
+                foreach ($s_u as $_s_u){
+                    if($_s_u['direction'] == 1){
+                        $f_value['sub'][0] = $_s_u;
+                    }
+
+                    if($_s_u['direction'] == 2){
+                        $f_value['sub'][1] = $_s_u;
+                    }
+
+                }
                 foreach ($f_value['sub'] as $key => &$value) {
+                    if($value['userId'] == 0){
+                        continue;
+                    }
                     $t_u = Db::name('user')->where(array('leaderNo' => $value['userId']))->field('userId, loginName, trueName, userType, direction, createTime')->select();
                     $value = array_merge($value, $count_arr);
+
                     if ($value['direction'] == 1) {     //direction 1-左 2-右
                         $f_value['l_z_count'] = $TYPE_VALUE[$value['userType']];
                     } else if ($value['direction'] == 2) {
                         $f_value['r_z_count'] = $TYPE_VALUE[$value['userType']];
                     }
-                    $value['sub'] = [['userId'=>0, 'direction' => 0],['userId'=>0, 'direction' => 0]];
+                    $value['sub'] = [['userId'=>0, 'direction' => 1],['userId'=>0, 'direction' => 2]];
                     if (!empty($t_u)) {
-                        $value['sub'] = $t_u;
+                        //对direction 排序
+                        foreach ($t_u as $_s_u){
+                            if($_s_u['direction'] == 1){
+                                $value['sub'][0] = $_s_u;
+                            }
+
+                            if($_s_u['direction'] == 2){
+                                $value['sub'][1] = $_s_u;
+                            }
+
+                        }
                         foreach ($value['sub'] as $key2 => &$value2) {
+                            if($value2['userId'] == 0){
+                                continue;
+                            }
                             $fourth_u = Db::name('user')->where(array('leaderNo' => $value2['userId']))->field('userId, loginName, trueName, userType, direction, createTime')->select();
                             $value2 = array_merge($value2, $count_arr);
+
+                            $order_count = $TYPE_VALUE[$value2['userType']];
+
                             if ($value2['direction'] == 1) {     //direction 1-左 2-右
-                                $value['l_z_count'] = $TYPE_VALUE[$value2['userType']];
+                                $value['l_z_count'] = $order_count;
                             } else if ($value2['direction'] == 2) {
-                                $value['r_z_count'] = $TYPE_VALUE[$value2['userType']];
+                                $value['r_z_count'] = $order_count;
                             }
-                            $value2['sub'] = [['userId'=>0, 'direction' => 0],['userId'=>0, 'direction' => 0]];
+
+                            //累加到1层
+                            if ($value['direction'] == 1) {     //direction 1-左 2-右
+                                $f_value['l_z_count'] = $f_value['l_z_count'] + $order_count;
+                            } else if ($value['direction'] == 2) {
+                                $f_value['r_z_count'] = $f_value['r_z_count'] + $order_count;
+                            }
+                            $value2['sub'] = [['userId'=>0, 'direction' => 1],['userId'=>0, 'direction' => 2]];
                             if (!empty($fourth_u)) {
-                                $value2['sub'] = $fourth_u;
+                                //对direction 排序
+                                foreach ($fourth_u as $_s_u){
+                                    if($_s_u['direction'] == 1){
+                                        $value2['sub'][0] = $_s_u;
+                                    }
+
+                                    if($_s_u['direction'] == 2){
+                                        $value2['sub'][1] = $_s_u;
+                                    }
+
+                                }
                                 foreach ($value2['sub'] as $key3 => &$value3) {
+                                    if($value3['userId'] == 0){
+                                        continue;
+                                    }
                                     //计算3层订单数
                                     $value3 = array_merge($value3, $count_arr);
+
+                                    //单数
+                                    $order_count = $TYPE_VALUE[$value3['userType']];
+
                                     //dump($value3);exit;
                                     if ($value3['direction'] == 1) {     //direction 1-左 2-右
-                                        $value2['l_z_count'] = $TYPE_VALUE[$value3['userType']];
+                                        $value2['l_z_count'] = $order_count;
                                     } else if ($value3['direction'] == 2) {
-                                        $value2['r_z_count'] = $TYPE_VALUE[$value3['userType']];
+                                        $value2['r_z_count'] = $order_count;
                                     }
                                     //累加到2层
                                     if ($value2['direction'] == 1) {     //direction 1-左 2-右
-                                        $value['l_z_count'] = $value['l_z_count'] + $value2['l_z_count'] + $value2['r_z_count'];
-                                    } else if ($value3['direction'] == 2) {
-                                        $value['r_z_count'] = $value['r_z_count'] + $value2['l_z_count'] + $value2['r_z_count'];
+                                        $value['l_z_count'] = $value['l_z_count'] + $order_count;
+                                    } else if ($value2['direction'] == 2) {
+                                        $value['r_z_count'] = $value['r_z_count'] + $order_count;
                                     }
                                     //累加到1层
                                     if ($value['direction'] == 1) {     //direction 1-左 2-右
-                                        $f_value['l_z_count'] = $f_value['l_z_count'] + $value['l_z_count'] + $value['r_z_count'];
-                                    } else if ($value3['direction'] == 2) {
-                                        $f_value['r_z_count'] = $f_value['r_z_count'] + $value['l_z_count'] + $value['r_z_count'];
+                                        $f_value['l_z_count'] = $f_value['l_z_count'] + $order_count;
+                                    } else if ($value['direction'] == 2) {
+                                        $f_value['r_z_count'] = $f_value['r_z_count'] + $order_count;
                                     }
+
                                     //计算余数据 第1层
                                     $differ = $f_value['l_z_count'] - $f_value['r_z_count'];
                                     if ($differ >= 0) {
