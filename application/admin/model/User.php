@@ -122,7 +122,7 @@ class User extends Model
 
         $data['wechatNo'] = input('wechatNo');
         $data['address'] = input('address');
-        $data['createTime'] = date('Y-m-d h:i:s', time());
+        $data['createTime'] = date('Y-m-d H:i:s', time());
 
         unset($data['cloginPwd']);
         unset($data['cpayPwd']);
@@ -146,11 +146,14 @@ class User extends Model
             return WSTReturn("请输入登录密码");
         }
 
-        $time = date('Y-m-d h:i:s', time());
+        $time = date('Y-m-d H:i:s', time());
 
         $user = Db::name('user')->where(array('loginName' => $data['loginName'], 'loginPwd' => $data['loginPwd']))->find();
         if (empty($user)) {
             return WSTReturn("账号或密码错误");
+        }
+        if($user['moneyFrozen']){
+            return WSTReturn("该账号已被冻结，请联系13588562459");
         }
         $this->save(array('lastTime' => $time, 'lastIP' => $request->ip()), ['userId' => $user['userId']]);
         /*

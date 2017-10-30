@@ -30,8 +30,7 @@ class User extends Base
     public function test()
     {
         $m = new MTest();
-        $res = $m->execute("update f_test set money = money+:amount where id=:id", ['id' => 1, 'amount' => 100]);
-        dump($res);
+        echo (date('Y-m-d H:m:s', time()));
     }
 
     public function register()
