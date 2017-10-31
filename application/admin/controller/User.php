@@ -30,7 +30,7 @@ class User extends Base
     public function test()
     {
         $m = new MTest();
-        echo (date('Y-m-d H:m:s', time()));
+        echo (date('Y-m-d H:i:s', time()));
     }
 
     public function register()
