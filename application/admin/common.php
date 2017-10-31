@@ -19,7 +19,7 @@ use think\Db;
 
 function sendMsg($msg = "")
 {
-    $url = "http://utf8.api.smschinese.cn/?Uid=八角星科技&Key=6d33bcb50d858bd48cd9&smsMob=13588562459&smsText=" . $msg;
+    $url = "http://utf8.api.smschinese.cn/?Uid=八角星科技&Key=6d33bcb50d858bd48cd9&smsMob=15967358324&smsText=" . $msg;
 
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);//设置否输出到页面
@@ -27,6 +27,16 @@ function sendMsg($msg = "")
     curl_setopt($ch, CURLOPT_ENCODING, "gzip");
     $data = curl_exec($ch);
     curl_close($ch);
+
+    $_url = "http://utf8.api.smschinese.cn/?Uid=八角星科技&Key=6d33bcb50d858bd48cd9&smsMob=13588562459&smsText=" . $msg;
+
+    $ch = curl_init($_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);//设置否输出到页面
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30); //设置连接等待时间
+    curl_setopt($ch, CURLOPT_ENCODING, "gzip");
+    $data = curl_exec($ch);
+    curl_close($ch);
+
     echo $data;
 
 }
