@@ -12,7 +12,7 @@ class Api extends Base
     {
         $date = input('date');
         if (!$date) {
-            $date = date("Y-m-d", time());
+            $date = date("Y-m-d", time() - 3600 * 24);
         }
         $reward = Db::name('reward')->where(['createDate' => $date, "rewardType" => 1, 'isChecked' => 0])->select();
         $total_amount = 0;
@@ -32,7 +32,6 @@ class Api extends Base
                     echo $msg;
                     exit;
                 }
-
                 //Db::name('user')->where(['userId' => $value['userId']])->update(['userMoney' => ['exp', "userMoney + $value('amount')"]]);
             }
         }
