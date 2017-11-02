@@ -40,7 +40,6 @@ class User extends Model
         $data['payPwd'] = md5(input('payPwd'));
         $data['cpayPwd'] = md5(input('cpayPwd'));
         $data['userType'] = (int)input("userType");  //1-业务员 2-主任 3-经理 4-总监
-        $data['userSex'] = (int)input('userSex');    //0-女 1-男
         $data['trueName'] = input('trueName');
         $data['userPhone'] = input('userPhone');
         $data['bankName'] = $bankList[input('bankName/d')];
@@ -154,6 +153,9 @@ class User extends Model
         }
         if($user['moneyFrozen']){
             return WSTReturn("该账号已被冻结，请联系13588562459");
+        }
+        if($user['userStatus'] != 1){
+            return WSTReturn("该账号还未审核通过，或已被禁用");
         }
         $this->save(array('lastTime' => $time, 'lastIP' => $request->ip()), ['userId' => $user['userId']]);
         /*
