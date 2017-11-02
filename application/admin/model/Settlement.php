@@ -433,7 +433,10 @@ class Settlement extends Model
         $f_date = input('f_date');
         $e_date = input('e_date');
 
-        if(empty($userId)){
+        //当类型为2、3 充值、提现 时 不需要 穿入userId 查询
+        if($tradeType == 2 || $tradeType == 3){
+
+        }else if(empty($userId)){
             return WSTReturn('会员编码错误');
         } else {
             $where['userFromId|userToId'] = $userId;
