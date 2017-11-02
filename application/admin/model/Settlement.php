@@ -121,6 +121,9 @@ class Settlement extends Model
 
 
             $data['fromAmount'] = $uRes['fictitiousMoney'] - $data['amount'];
+            if($data['fromAmount'] < 0){
+                return WSTReturn("转币金额需不能大于电子币余额");
+            }
             $data['toAmount'] = $toUser['fictitiousMoney'] + $data['amount'];
             $data['userToId'] = $userToId;
             $data['userFromId'] = $data['userId'];
