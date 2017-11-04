@@ -320,7 +320,7 @@ class User extends Base
             try {
                 Db::name('ad_click')->where(['id' => $id, 'createDate' => $date])->update($data);
                 $r_data = ['amount' => $click_money * $ad['total']];
-                $r_where = ['createDate' => $date, 'userId' => $userId];
+                $r_where = ['createDate' => $date, 'userId' => $userId, 'rewardType' => 1];
                 $res = $r->where($r_where)->update($r_data);
                 if ($res) {
                     Db::commit();
