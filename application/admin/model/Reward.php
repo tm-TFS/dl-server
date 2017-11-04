@@ -28,7 +28,7 @@ class Reward extends Model
         $userId = input('userId/d');
         $f_date = input('f_date');
         $e_date = input('e_date');
-        $pageSize = input('pageSize/d');;
+        $pageSize = 10;
         $pageId = input('pageId/d');
 
         if(empty($userId)){

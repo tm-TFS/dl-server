@@ -150,7 +150,6 @@ class Settlement extends Model
                 return WSTReturn('操作失败',-1);
             }
             return WSTReturn("申请成功", 1);
-
         }
 
         //开通会员 （特殊，不需审核，直接操作user表）
