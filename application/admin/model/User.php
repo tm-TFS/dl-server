@@ -88,15 +88,27 @@ class User extends Model
         $agent = $this->getById($data['agentCenter']);
         if (empty($agent)) {
             return WSTReturn("无效的代理中心!");
-        } else {
-            if ($agent['userType'] != 4) {
-                return WSTReturn("该代理用户级别太低!");
-            }
+        } else if ($agent['userType'] != 4) {
+            return WSTReturn("该代理用户级别太低!");
+        } else if($agent['userStatus'] != 1){
+            return WSTReturn("该代理中心已被禁用或未审核通过!");
+        } else if($agent['moneyFrozen'] == 1){
+            return WSTReturn("该代理中心已被冻结!");
+        }
+
+        //查看该接点人是否被冻结或审核通过
+        $leader = $this->getById($data['leaderNo']);
+        if(empty($leader)){
+            return WSTReturn("无效的接点人！");
+        } else if($leader['userStatus'] != 1){
+            return WSTReturn("该接点人已被禁用或未审核通过!");
+        } else if($leader['moneyFrozen'] == 1){
+            return WSTReturn("该接点人已被冻结!");
         }
 
         //查询该接点人位置是否被占用
-        $leader = $this->where(array('leaderNo' => $data['leaderNo'], 'direction' => $data['direction']))->field('userId')->find();
-        if (!empty($leader)) {
+        $l_user = $this->where(array('leaderNo' => $data['leaderNo'], 'direction' => $data['direction']))->field('userId')->find();
+        if (!empty($l_user)) {
             return WSTReturn("所在位置已被占用!");
         }
 
@@ -127,7 +139,8 @@ class User extends Model
         unset($data['cpayPwd']);
 
         //$ip = request()->ip();
-        $userId = $this->data($data)->save();
+        $this->data($data)->save();
+        //$userId = $this->user_id;
         return WSTReturn('注册成功', 1);
     }
 
@@ -254,7 +267,7 @@ class User extends Model
         }
     }
 
-    public function getSort()
+    /*public function getSort()
     {
         $userId = input('userId');
 
@@ -393,6 +406,142 @@ class User extends Model
                                     }
 
                                     //第3层
+                                    $differ = $value3['l_z_count'] - $value3['r_z_count'];
+                                    if ($differ >= 0) {
+                                        $value3['l_y_count'] = $differ;
+                                    } else {
+                                        $value3['r_y_count'] = abs($differ);
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return WSTReturn("", 1, $f_u);
+    }*/
+
+    public function getSort()
+    {
+        $userId = input('userId');
+
+        $TYPE_VALUE = [0, 1, 3, 4, 6];
+
+        $count_arr = [
+            'l_z_count' => 0,
+            'l_y_count' => 0,
+            'l_x_count' => 0,
+            'r_z_count' => 0,
+            'r_y_count' => 0,
+            'r_x_count' => 0,
+        ];
+
+        $f_u = Db::name('user')->where('userId', $userId)->field('userId, loginName, trueName, userType, direction, createTime, leftCount, rightCount')->select();
+
+        $s_u = Db::name('user')->where(array('leaderNo' => $userId))->field('userId, loginName, trueName, userType, direction, createTime, leftCount, rightCount')->select();
+
+        foreach ($f_u as &$f_value) {
+            $f_value = array_merge($f_value, $count_arr);
+
+            //计算总、余 单数
+            $f_value['l_z_count'] = $f_value['leftCount'];
+            $f_value['r_z_count'] = $f_value['rightCount'];
+            $differ = $f_value['l_z_count'] - $f_value['r_z_count'];
+            if ($differ >= 0) {
+                $f_value['l_y_count'] = $differ;
+            } else {
+                $f_value['r_y_count'] = abs($differ);
+            }
+
+            $f_value['sub'] = [['userId'=>0, 'direction' => 1],['userId'=>0, 'direction' => 2]];
+            if (!empty($s_u)) {
+                //对direction 排序
+                foreach ($s_u as $_s_u){
+                    if($_s_u['direction'] == 1){
+                        $f_value['sub'][0] = $_s_u;
+                    }
+
+                    if($_s_u['direction'] == 2){
+                        $f_value['sub'][1] = $_s_u;
+                    }
+
+                }
+                foreach ($f_value['sub'] as $key => &$value) {
+                    if($value['userId'] == 0){
+                        continue;
+                    }
+                    $t_u = Db::name('user')->where(array('leaderNo' => $value['userId']))->field('userId, loginName, trueName, userType, direction, createTime, leftCount, rightCount')->select();
+                    $value = array_merge($value, $count_arr);
+
+
+                    //计算总、余 单数
+                    $value['l_z_count'] = $value['leftCount'];
+                    $value['r_z_count'] = $value['rightCount'];
+                    $differ = $value['l_z_count'] - $value['r_z_count'];
+                    if ($differ >= 0) {
+                        $value['l_y_count'] = $differ;
+                    } else {
+                        $value['r_y_count'] = abs($differ);
+                    }
+
+
+                    $value['sub'] = [['userId'=>0, 'direction' => 1],['userId'=>0, 'direction' => 2]];
+                    if (!empty($t_u)) {
+                        //对direction 排序
+                        foreach ($t_u as $_s_u){
+                            if($_s_u['direction'] == 1){
+                                $value['sub'][0] = $_s_u;
+                            }
+
+                            if($_s_u['direction'] == 2){
+                                $value['sub'][1] = $_s_u;
+                            }
+
+                        }
+                        foreach ($value['sub'] as $key2 => &$value2) {
+                            if($value2['userId'] == 0){
+                                continue;
+                            }
+                            $fourth_u = Db::name('user')->where(array('leaderNo' => $value2['userId']))->field('userId, loginName, trueName, userType, direction, createTime, leftCount, rightCount')->select();
+                            $value2 = array_merge($value2, $count_arr);
+
+                            //计算总、余 单数
+                            $value2['l_z_count'] = $value2['leftCount'];
+                            $value2['r_z_count'] = $value2['rightCount'];
+                            $differ = $value2['l_z_count'] - $value2['r_z_count'];
+                            if ($differ >= 0) {
+                                $value2['l_y_count'] = $differ;
+                            } else {
+                                $value2['r_y_count'] = abs($differ);
+                            }
+
+
+                            $value2['sub'] = [['userId'=>0, 'direction' => 1],['userId'=>0, 'direction' => 2]];
+                            if (!empty($fourth_u)) {
+                                //对direction 排序
+                                foreach ($fourth_u as $_s_u){
+                                    if($_s_u['direction'] == 1){
+                                        $value2['sub'][0] = $_s_u;
+                                    }
+
+                                    if($_s_u['direction'] == 2){
+                                        $value2['sub'][1] = $_s_u;
+                                    }
+
+                                }
+                                foreach ($value2['sub'] as $key3 => &$value3) {
+                                    if($value3['userId'] == 0){
+                                        continue;
+                                    }
+                                    //计算3层订单数
+                                    $value3 = array_merge($value3, $count_arr);
+
+                                    //计算总、余 单数
+                                    $value3['l_z_count'] = $value3['leftCount'];
+                                    $value3['r_z_count'] = $value3['rightCount'];
                                     $differ = $value3['l_z_count'] - $value3['r_z_count'];
                                     if ($differ >= 0) {
                                         $value3['l_y_count'] = $differ;

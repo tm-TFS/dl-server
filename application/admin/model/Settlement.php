@@ -9,6 +9,54 @@ use app\admin\model\Reward as Mre;
 
 class Settlement extends Model
 {
+    static public $timeCounter = 0;
+    static public $orderCount = 0;
+
+    public function checkOrganize($userId, $degree){
+        $m = new Mre();
+        $TYPE_VALUE = [0, 1, 3, 4, 6];
+        self::$timeCounter ++;
+        if(self::$timeCounter > $degree){
+            return true;
+        }
+        $user = Db::name('user')->where(array('userId' => $userId))->find();
+
+        //记录增加的单数
+        if(self::$timeCounter == 1){
+            self::$orderCount = $TYPE_VALUE[$user['userType']];
+        }
+
+        if(empty($user)){
+            return false;
+        }
+        $fuser = Db::name('user')->where(array('userId' => $user['leaderNo']))->find();
+        if(!empty($fuser)) {
+            //增加上级左右单数
+            if ($user['direction'] == 1) {
+                $fuser['leftCount'] += self::$orderCount;
+            } else {
+                $fuser['rightCount'] += self::$orderCount;
+            }
+            Db::name('user')->where(array('userId' => $fuser['userId']))->update(array('leftCount' => $fuser['leftCount'], 'rightCount' => $fuser['rightCount']));
+            //左右单数对碰
+            if ($fuser['leftCount'] == $fuser['rightCount']) {
+                $res = $m->dealOrganize($fuser);
+                if($res['status'] == -1){
+                    return false;
+                }
+            }
+            self::checkOrganize($fuser['userId'], $degree);
+        } else {
+            return true;
+        }
+    }
+
+    public function test()
+    {
+        $userId = 100006;
+        $this->checkOrganize($userId, 3);
+    }
+
     /**
      * params: {
      * tradeType: 1-支付 2-充值 3-提现 4-转账 5-退款 6-开通会员 7-奖金转电子币 8-会员升级,
@@ -241,6 +289,13 @@ class Settlement extends Model
                 $userIdArr = explode(',',input('userIds'));
                 $_u_data = array();
                 foreach ($userIdArr as $v){
+                    // $v 为激活的用户id ， degree 3 代表递归深度为3层
+                    $r_res = $this->checkOrganize($v, 3);
+                    /*if(!$r_res){
+                        dump($r_res);
+                        Db::rollback();
+                        return WSTReturn('操作失败',-1);
+                    }*/
                     $_u_data[] = ['userId'=>$v, 'userStatus' => 1];
                 }
                 $u->saveAll($_u_data);

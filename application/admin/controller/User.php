@@ -27,10 +27,50 @@ class User extends Base
         $this->token_check(input('userId'), input('token'));
     }
 
+    static public $timeCounter = 0;
+    static public $orderCount = 0;
+
+    public function checkOrganize($userId, $degree){
+        $m = new Mre();
+        $TYPE_VALUE = [0, 1, 3, 4, 6];
+        self::$timeCounter ++;
+        if(self::$timeCounter > $degree){
+            $this->successReturn('操作成功');
+        }
+        $user = Db::name('user')->where(array('userId' => $userId))->find();
+
+        //记录增加的单数
+        if(self::$timeCounter == 1){
+            self::$orderCount = $TYPE_VALUE[$user['userType']];
+        }
+
+        if(empty($user)){
+            $this->errorReturn('错误的会员编码');
+        }
+        $fuser = Db::name('user')->where(array('userId' => $user['leaderNo']))->find();
+        if(!empty($fuser)) {
+            //增加上级左右单数
+            if ($user['direction'] == 1) {
+                $fuser['leftCount'] += self::$orderCount;
+            } else {
+                $fuser['rightCount'] += self::$orderCount;
+            }
+            Db::name('user')->where(array('userId' => $fuser['userId']))->update(array('leftCount' => $fuser['leftCount'], 'rightCount' => $fuser['rightCount']));
+            //左右单数对碰
+            if ($fuser['leftCount'] == $fuser['rightCount']) {
+                $res = $m->dealOrganize($fuser);
+                if($res['status'] == -1){
+                    $this->errorReturn('操作失败');
+                }
+            }
+            self::checkOrganize($fuser['userId'], $degree);
+        }
+    }
+
     public function test()
     {
-        $m = new MTest();
-        echo (date('Y-m-d H:i:s', time()));
+        $userId = 100006;
+        dump($this->checkOrganize($userId, 3));
     }
 
     public function register()
@@ -207,10 +247,13 @@ class User extends Base
     {
         $m = new MUser();
         $key = input('key');
-        $where = array(
-            'recommender' => input('recommender'),
-
-        );
+        $where = array();
+        if(!empty(input('agentCenter'))){
+            $where['agentCenter'] =  input('agentCenter');
+        }
+        if(!empty(input('recommender'))){
+            $where['recommender'] =  input('recommender');
+        }
         if (!empty($key)) {
             $where['loginName|trueName'] = ['like', "%" . "$key" . "%"];
         }

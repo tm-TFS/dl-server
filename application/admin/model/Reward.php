@@ -4,9 +4,48 @@ namespace app\admin\model;
 
 use think\Model;
 use think\Db;
+use app\admin\model\User as MUser;
 
 class Reward extends Model
 {
+
+    /**
+     *
+     * 记录对碰奖
+     *
+     */
+    public function dealOrganize($user) {
+
+        if(empty($user)){
+            return WSTReturn("错误的用户对象");
+        }
+        $date = date("Y-m-d",time());
+        // 组织奖励 -- 奖励基数 * 单数
+        $amount = config('organize')[$user['userType']]['unit'] * ($user['leftCount'] - $user['organizeCount']);
+        $data = array(
+            'amount' => $amount,
+            'userId' => $user['userId'],
+            'rewardType' => 2,
+            'createDate' => $date,
+        );
+        $u = new MUser();
+        Db::startTrans();
+        try{
+            $res = $this->allowField(true)->save($data);
+            $u_data = [
+                'userMoney' => $amount + $user['userMoney'],
+                'organizeCount' => $user['leftCount']
+            ];
+            $u->save($u_data, ['userId' => $data['userId']]);
+            Db::commit();
+        }catch (\Exception $e) {
+            Db::rollback();
+            return WSTReturn('操作失败',-1);
+        }
+        return WSTReturn("申请成功", 1);
+    }
+
+
     public function getInfo(){
         $id = input('userId/d');
         $date = date('Y-m-d');
