@@ -45,7 +45,7 @@ class Api extends Base
         $users = Db::name('user')->where(array('moneyFrozen' => 0))->select();
         $pass_time = time() - 3600 * 48;
         $frozen_time_1 = time() - 3600 * 24 * 30 * 2;
-        $frozen_time_2 = time() - 3600 * 24 * 30 * 4;
+        $frozen_time_2 = time() - 3600 * 24 * 30 * 3;
         $frozen_users = [];
         $delete_users_count = 0;
 
@@ -66,7 +66,7 @@ class Api extends Base
                     continue;
                 }
 
-                //冻结注册时间超过四个月，且没有发展2个会员的用户 moneyFrozen
+                //冻结注册时间超过3个月，且没有发展2个会员的用户 moneyFrozen
                 if ($frozen_time_2 > strtotime($user['createTime']) && $one_sub_count < 2){
                     Db::name('user')->where(array('userId' => $user['userId']))->update(array('moneyFrozen' => 1));
                     $frozen_users[] = $user['userId'];
