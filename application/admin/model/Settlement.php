@@ -107,7 +107,7 @@ class Settlement extends Model
         //提现
         if ($data['tradeType'] == 3) {
 
-            $serverPercent = 0.06;  //手续费
+            $serverPercent = 0.1;  //手续费
             if (empty($uRes)) {
                 return WSTReturn("错误的提现对象");
             }
